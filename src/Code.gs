@@ -123,13 +123,16 @@ function sendLineMessage(patternIndex, dinnerKey, hasSchedule, scheduleTime, sch
     }
   }
 
-  var text =
-    '今から帰ります！\n' +
-    '【到着予定】' + arrival + '\n' +
-    '【夕飯】' + dinnerLine;
-
+  var text = '今から帰ります！\n';
   if (scheduleOn) {
-    text += '\n【予定】' + scheduleDetailText + '\n【予想帰宅】' + scheduleTimeText;
+    text +=
+      '【予定】' + scheduleDetailText + '\n' +
+      '【到着予定（予想）】' + scheduleTimeText + '\n' +
+      '【夕飯】' + dinnerLine;
+  } else {
+    text +=
+      '【到着予定】' + arrival + '\n' +
+      '【夕飯】' + dinnerLine;
   }
 
   var payload = {
