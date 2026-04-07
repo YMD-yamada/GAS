@@ -1,0 +1,6 @@
+# clasp が push 対象外にするファイル（必要に応じて追加）
+**/.md
+docs/**
+LICENSE
+README.md
+.gitignore

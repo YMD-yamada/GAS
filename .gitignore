@@ -1,0 +1,12 @@
+# 秘密情報・ローカル設定（GitHub に載せない）
+.env
+.env.*
+!.env.example
+
+# clasp（scriptId を公開したくない場合はこのファイルをコミットしない）
+.clasp.json
+
+# OS・エディタ
+.DS_Store
+Thumbs.db
+*.log
