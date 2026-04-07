@@ -1,126 +1,161 @@
 /**
- * 家族向け：帰宅予定・食事の有無などを LINE に通知する（GAS × Messaging API）
- * 秘密情報はスクリプトのプロパティにのみ保存し、コードに直書きしないこと。
+ * LINE Messaging API で家族へ帰宅連絡を Push 送信する Web アプリ
+ *
+ * 【初回セットアップ】
+ * 1. LINE Developers で Messaging API チャネルを作成し、Channel access token を発行
+ * 2. 送信先の userId（または groupId）を取得（Webhook または友だち追加時のイベント等）
+ * 3. このスクリプトの「プロジェクトの設定」→「スクリプトのプロパティ」に以下を追加:
+ *    - LINE_CHANNEL_ACCESS_TOKEN : チャネルアクセストークン
+ *    - LINE_TO_ID               : 送信先の userId または groupId（groupId 取得時は自分の userId のまま）
+ * 4. Webhook 用に Web アプリをデプロイし、その URL を LINE Developers の Webhook URL に設定
  */
 
-/** @type {string} プロパティキー（スクリプトのプロパティ名と一致させる） */
-var PROP = {
-  LINE_CHANNEL_ACCESS_TOKEN: 'LINE_CHANNEL_ACCESS_TOKEN',
-  LINE_TO_USER_ID: 'LINE_TO_USER_ID',
-  /** 任意：Webhook の署名検証用（未設定なら検証スキップ） */
-  LINE_CHANNEL_SECRET: 'LINE_CHANNEL_SECRET',
-  /** 任意：スタンドアロンスクリプトで別ファイルのシートを開くとき */
-  SPREADSHEET_ID: 'SPREADSHEET_ID',
-  /** シートが無い／使わないときのフォールバック（テスト用） */
-  FALLBACK_RETURN_TIME: 'FALLBACK_RETURN_TIME',
-  FALLBACK_MEAL: 'FALLBACK_MEAL',
-  FALLBACK_NOTE: 'FALLBACK_NOTE',
+var PATTERNS = [
+  { id: 'p1', label: '17時半終了', arrival: '19:00前' },
+  { id: 'p2', label: '18時前終了', arrival: '19:00すぎ' },
+  { id: 'p3', label: '18時半終了', arrival: '20:00前' },
+  { id: 'p4', label: '19時半終了', arrival: '21:00前' },
+  { id: 'p5', label: '20時半終了', arrival: '22:00前' }
+];
+
+var DINNER_LABELS = {
+  home: '家で食べます',
+  eatOut: '食べて帰ります',
+  none: 'いりません'
 };
 
-var LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push';
-
-/**
- * メイン：スプレッドシート（またはフォールバック）の内容で 1 通送信する。
- * 時間トリガーはこの関数に紐づける。
- */
-function sendFamilyUpdate() {
-  var text = buildMessageBody_();
-  pushLineText_(text);
+function doGet() {
+  return HtmlService.createTemplateFromFile('index')
+    .evaluate()
+    .setTitle('帰宅連絡')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 /**
- * 接続テスト：固定の短い文を送る（初回の疎通確認用）
+ * LINE Webhook 受信。events 内の source が group のものから groupId を集め、
+ * LINE_TO_ID（自分の userId 等）へ Push でオウム返しする（取得用）。
  */
-function sendTestMessage() {
-  pushLineText_('【テスト】GAS からの送信テストです。これが届けばトークン・送信先 ID は有効です。');
-}
-
-/**
- * 本文を組み立てる。シート優先、ダメならプロパティのフォールバック。
- */
-function buildMessageBody_() {
-  var data = readDailyInput_();
-  var lines = [];
-  lines.push('【今日の連絡】');
-  lines.push('帰宅予定：' + data.returnTime);
-  lines.push('食事：' + data.meal);
-  if (data.note) {
-    lines.push('メモ：' + data.note);
-  }
-  return lines.join('\n');
-}
-
-/**
- * @returns {{returnTime:string, meal:string, note:string}}
- */
-function readDailyInput_() {
+function doPost(e) {
   try {
-    var sh = getTargetSheet_();
-    var returnTime = String(sh.getRange('B1').getDisplayValue() || '').trim();
-    var meal = String(sh.getRange('B2').getDisplayValue() || '').trim();
-    var note = String(sh.getRange('B3').getDisplayValue() || '').trim();
-    if (!returnTime && !meal && !note) {
-      return readFallbackFromProperties_();
+    var props = PropertiesService.getScriptProperties();
+    var token = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+    var toId = props.getProperty('LINE_TO_ID');
+
+    if (!e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput('OK');
     }
-    return {
-      returnTime: returnTime || '（未入力）',
-      meal: meal || '（未入力）',
-      note: note,
-    };
+
+    var data = JSON.parse(e.postData.contents);
+    var events = data.events || [];
+    var seen = {};
+    var groupIds = [];
+
+    for (var i = 0; i < events.length; i++) {
+      var src = events[i].source;
+      if (src && src.type === 'group' && src.groupId && !seen[src.groupId]) {
+        seen[src.groupId] = true;
+        groupIds.push(src.groupId);
+      }
+    }
+
+    if (groupIds.length > 0 && token && toId) {
+      var text = '取得した groupId:\n' + groupIds.join('\n');
+      var payload = {
+        to: toId,
+        messages: [{ type: 'text', text: text }]
+      };
+      UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'post',
+        contentType: 'application/json',
+        headers: { Authorization: 'Bearer ' + token },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+    }
   } catch (err) {
-    return readFallbackFromProperties_();
+    // パース失敗時も 200 を返し、LINE の再送ループを避ける
   }
-}
 
-function readFallbackFromProperties_() {
-  var p = PropertiesService.getScriptProperties();
-  return {
-    returnTime: p.getProperty(PROP.FALLBACK_RETURN_TIME) || '（未入力）',
-    meal: p.getProperty(PROP.FALLBACK_MEAL) || '（未入力）',
-    note: p.getProperty(PROP.FALLBACK_NOTE) || '',
-  };
+  return ContentService.createTextOutput('OK');
 }
 
 /**
- * スプレッドシート取得：SPREADSHEET_ID があれば ID で開く。無ければ紐づいたシート。
+ * クライアントから呼び出し。
+ * patternIndex: 0–4, dinnerKey: 'home' | 'eatOut' | 'none'
+ * hasSchedule: 予定あり/なし
+ * scheduleTime: 予想帰宅時間（例 21:00）
+ * scheduleDetail: 予定内容
  */
-function getTargetSheet_() {
+function sendLineMessage(patternIndex, dinnerKey, hasSchedule, scheduleTime, scheduleDetail) {
   var props = PropertiesService.getScriptProperties();
-  var id = props.getProperty(PROP.SPREADSHEET_ID);
-  if (id) {
-    return SpreadsheetApp.openById(id).getSheets()[0];
-  }
-  return SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-}
+  var token = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+  var toId = props.getProperty('LINE_TO_ID');
 
-function getProp_(key) {
-  return PropertiesService.getScriptProperties().getProperty(key);
-}
-
-/**
- * LINE Push API でテキストを 1 通送る。
- */
-function pushLineText_(text) {
-  var token = getProp_(PROP.LINE_CHANNEL_ACCESS_TOKEN);
-  var to = getProp_(PROP.LINE_TO_USER_ID);
-  if (!token || !to) {
-    throw new Error('スクリプトのプロパティに LINE_CHANNEL_ACCESS_TOKEN と LINE_TO_USER_ID を設定してください。');
+  if (!token || !toId) {
+    return {
+      ok: false,
+      error: 'スクリプトプロパティに LINE_CHANNEL_ACCESS_TOKEN と LINE_TO_ID を設定してください。'
+    };
   }
+
+  var pi = parseInt(patternIndex, 10);
+  if (isNaN(pi) || pi < 0 || pi >= PATTERNS.length) {
+    return { ok: false, error: '到着パターンが不正です。' };
+  }
+
+  if (!DINNER_LABELS.hasOwnProperty(dinnerKey)) {
+    return { ok: false, error: '夕飯オプションが不正です。' };
+  }
+
+  var arrival = PATTERNS[pi].arrival;
+  var dinnerLine = DINNER_LABELS[dinnerKey];
+  var scheduleOn = hasSchedule === true || hasSchedule === 'true' || hasSchedule === 1 || hasSchedule === '1';
+  var scheduleTimeText = String(scheduleTime || '').trim();
+  var scheduleDetailText = String(scheduleDetail || '').trim();
+
+  if (scheduleOn) {
+    if (!scheduleTimeText) {
+      return { ok: false, error: '予想帰宅時間を選択してください。' };
+    }
+    if (!scheduleDetailText) {
+      return { ok: false, error: '予定の内容を入力してください。' };
+    }
+  }
+
+  var text =
+    '今から帰ります！\n' +
+    '【到着予定】' + arrival + '\n' +
+    '【夕飯】' + dinnerLine;
+
+  if (scheduleOn) {
+    text += '\n【予定】' + scheduleDetailText + '\n【予想帰宅】' + scheduleTimeText;
+  }
+
   var payload = {
-    to: to,
-    messages: [{ type: 'text', text: text }],
+    to: toId,
+    messages: [{ type: 'text', text: text }]
   };
-  var res = UrlFetchApp.fetch(LINE_PUSH_URL, {
+
+  var url = 'https://api.line.me/v2/bot/message/push';
+  var options = {
     method: 'post',
     contentType: 'application/json',
-    headers: {
-      Authorization: 'Bearer ' + token,
-    },
+    headers: { Authorization: 'Bearer ' + token },
     payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-  });
-  var code = res.getResponseCode();
-  if (code < 200 || code >= 300) {
-    throw new Error('LINE API エラー HTTP ' + code + ' : ' + res.getContentText());
+    muteHttpExceptions: true
+  };
+
+  var response = UrlFetchApp.fetch(url, options);
+  var code = response.getResponseCode();
+  var body = response.getContentText();
+
+  if (code >= 200 && code < 300) {
+    return { ok: true };
   }
+
+  return {
+    ok: false,
+    error: 'LINE API エラー (' + code + '): ' + body
+  };
 }

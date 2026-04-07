@@ -11,10 +11,11 @@
  */
 
 var PATTERNS = [
-  { id: 'p1', label: '17時台終了', arrival: '19:00前' },
-  { id: 'p2', label: '18時半終了', arrival: '20:00前' },
-  { id: 'p3', label: '19時半終了', arrival: '21:00前' },
-  { id: 'p4', label: '20時半終了', arrival: '22:00前' }
+  { id: 'p1', label: '17時半終了', arrival: '19:00前' },
+  { id: 'p2', label: '18時前終了', arrival: '19:00すぎ' },
+  { id: 'p3', label: '18時半終了', arrival: '20:00前' },
+  { id: 'p4', label: '19時半終了', arrival: '21:00前' },
+  { id: 'p5', label: '20時半終了', arrival: '22:00前' }
 ];
 
 var DINNER_LABELS = {
@@ -80,9 +81,13 @@ function doPost(e) {
 }
 
 /**
- * クライアントから呼び出し。patternIndex: 0–3, dinnerKey: 'home' | 'eatOut' | 'none'
+ * クライアントから呼び出し。
+ * patternIndex: 0–4, dinnerKey: 'home' | 'eatOut' | 'none'
+ * hasSchedule: 予定あり/なし
+ * scheduleTime: 予想帰宅時間（例 21:00）
+ * scheduleDetail: 予定内容
  */
-function sendLineMessage(patternIndex, dinnerKey) {
+function sendLineMessage(patternIndex, dinnerKey, hasSchedule, scheduleTime, scheduleDetail) {
   var props = PropertiesService.getScriptProperties();
   var token = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
   var toId = props.getProperty('LINE_TO_ID');
@@ -105,11 +110,27 @@ function sendLineMessage(patternIndex, dinnerKey) {
 
   var arrival = PATTERNS[pi].arrival;
   var dinnerLine = DINNER_LABELS[dinnerKey];
+  var scheduleOn = hasSchedule === true || hasSchedule === 'true' || hasSchedule === 1 || hasSchedule === '1';
+  var scheduleTimeText = String(scheduleTime || '').trim();
+  var scheduleDetailText = String(scheduleDetail || '').trim();
+
+  if (scheduleOn) {
+    if (!scheduleTimeText) {
+      return { ok: false, error: '予想帰宅時間を選択してください。' };
+    }
+    if (!scheduleDetailText) {
+      return { ok: false, error: '予定の内容を入力してください。' };
+    }
+  }
 
   var text =
     '今から帰ります！\n' +
     '【到着予定】' + arrival + '\n' +
     '【夕飯】' + dinnerLine;
+
+  if (scheduleOn) {
+    text += '\n【予定】' + scheduleDetailText + '\n【予想帰宅】' + scheduleTimeText;
+  }
 
   var payload = {
     to: toId,

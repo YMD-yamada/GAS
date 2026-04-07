@@ -2,14 +2,14 @@
 
 **GitHub**: [https://github.com/YMD-yamada/GAS](https://github.com/YMD-yamada/GAS)
 
-毎日の「帰宅の目安」「食事の有無」「メモ」を、Google スプレッドシート（またはスクリプトのプロパティ）の内容に基づき **LINE にプッシュ通知**する個人利用向けのサンプルです。
+終了時刻・夕飯・予定（任意）を選んで、家族へ **LINE にプッシュ通知**する個人利用向け Web アプリです。
 
 ## できること
 
 - **プッシュ通知**：Messaging API で、指定したユーザー（家族の LINE）にテキストを送る  
-- **入力**：1 枚目のシートの **B1〜B3**（帰宅・食事・メモ）。シートが使えない場合はプロパティのフォールバック値  
-- **テスト**：`sendTestMessage` で疎通確認  
-- **Webhook（任意）**：友だち追加・メッセージ受信で **ユーザー ID をログ**し、`LINE_TO_USER_ID` が空なら自動保存  
+- **入力**：終了時刻 5 パターン、夕飯、予定あり/なし、予定内容、予想帰宅時間  
+- **送信**：`sendLineMessage(...)` で選択内容を LINE に送信  
+- **Webhook（任意）**：グループイベントから `groupId` を取得し、`LINE_TO_ID` 宛に通知（取得補助）  
 
 ## ドキュメント（未経験者向け）
 
@@ -32,8 +32,8 @@
 ├── .claspignore
 ├── src/
 │   ├── appsscript.json       # マニフェスト（権限・タイムゾーン）
-│   ├── Code.gs               # 送信・シート読み取り
-│   └── Webhook.gs            # LINE Webhook（doPost / doGet）
+│   ├── Code.gs               # Web アプリ本体（doGet/doPost/sendLineMessage）
+│   └── index.html            # 画面（終了時刻・夕飯・予定入力）
 └── docs/
     ├── setup-beginner.md
     ├── script-properties.md
@@ -46,12 +46,10 @@
 
 1. LINE Developers で **Messaging API** チャネルを作成し、**チャネルアクセストークン（長期）** を取得する。  
 2. 公式アカウントを家族に **友だち追加**してもらう。  
-3. Google スプレッドシートを用意し、[レイアウト](docs/spreadsheet-layout.md)どおり **B1〜B3** に入力欄を作る（スクリプトをシートから開けば `SPREADSHEET_ID` は不要）。  
-4. 「拡張機能 → Apps Script」で `src/Code.gs` と `src/Webhook.gs` をコピーする。  
-5. **プロジェクトの設定 → スクリプトのプロパティ** に `LINE_CHANNEL_ACCESS_TOKEN` 等を設定する（一覧は [script-properties.md](docs/script-properties.md)）。  
-6. `sendTestMessage` → 成功したら `sendFamilyUpdate`。  
-7. 必要なら **トリガー**で `sendFamilyUpdate` を毎日実行。  
-8. ユーザー ID が分からない場合は [setup-beginner.md の Webhook 手順](docs/setup-beginner.md#d-webhook-用ウェブアプリのデプロイユーザー-id-取得署名検証) でウェブアプリ URL を LINE に登録する。
+3. 「拡張機能 → Apps Script」で `src/Code.gs` と `src/index.html` をコピーする。  
+4. **プロジェクトの設定 → スクリプトのプロパティ** に `LINE_CHANNEL_ACCESS_TOKEN` と `LINE_TO_ID` を設定する（一覧は [script-properties.md](docs/script-properties.md)）。  
+5. ウェブアプリとしてデプロイして URL を開き、画面から送信テストする。  
+6. グループ ID が必要な場合は [setup-beginner.md の Webhook 手順](docs/setup-beginner.md#d-webhook-用ウェブアプリのデプロイユーザー-id-取得署名検証) を実施する。
 
 **初めての方は [docs/setup-beginner.md](docs/setup-beginner.md) を上から順に読むことをおすすめします。**
 
