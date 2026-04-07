@@ -1,5 +1,7 @@
 # 家族向け帰宅・食事通知（GAS × LINE）
 
+**GitHub**: [https://github.com/YMD-yamada/GAS](https://github.com/YMD-yamada/GAS)
+
 毎日の「帰宅の目安」「食事の有無」「メモ」を、Google スプレッドシート（またはスクリプトのプロパティ）の内容に基づき **LINE にプッシュ通知**する個人利用向けのサンプルです。
 
 ## できること
