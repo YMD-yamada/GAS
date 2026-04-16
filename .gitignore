@@ -10,3 +10,8 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# Cloudflare Workers（ローカル）
+workers/line-notification/node_modules/
+workers/line-notification/.wrangler/
+workers/line-notification/dist/

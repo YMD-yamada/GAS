@@ -1,0 +1,356 @@
+/** 帰宅連絡 UI（GAS の index.html と同等。送信は /api/send へ fetch） */
+export const PAGE_HTML = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>帰宅連絡</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --pattern-active-bg: #0d6efd;
+      --pattern-active-color: #fff;
+      --pattern-muted: #e9ecef;
+      --send-green: #198754;
+      --send-green-hover: #157347;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+      padding-bottom: 6rem;
+    }
+
+    .pattern-btn {
+      min-height: 4.25rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-width: 2px;
+      transition: transform 0.08s ease, box-shadow 0.15s ease;
+    }
+
+    .pattern-btn:not(.active) {
+      background: var(--pattern-muted);
+      border-color: #ced4da;
+      color: #495057;
+    }
+
+    .pattern-btn.active {
+      background: var(--pattern-active-bg);
+      border-color: var(--pattern-active-bg);
+      color: var(--pattern-active-color);
+      box-shadow: 0 0.35rem 0.85rem rgba(13, 110, 253, 0.45);
+      transform: scale(1.02);
+    }
+
+    .pattern-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .pattern-btn .small {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      opacity: 0.92;
+      margin-top: 0.15rem;
+    }
+
+    .segment-wrap {
+      display: flex;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 2px solid #dee2e6;
+      background: #fff;
+    }
+
+    .segment-wrap input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segment-wrap label {
+      flex: 1;
+      margin: 0;
+      padding: 0.9rem 0.5rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border-right: 1px solid #dee2e6;
+      background: #f8f9fa;
+      color: #495057;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .segment-wrap label:last-child {
+      border-right: none;
+    }
+
+    .segment-wrap input:checked + label {
+      background: var(--pattern-active-bg);
+      color: #fff;
+    }
+
+    .send-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 -0.25rem 1rem rgba(0, 0, 0, 0.06);
+      z-index: 1000;
+    }
+
+    .btn-send {
+      min-height: 3.5rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      background: var(--send-green);
+      border: none;
+      color: #fff;
+    }
+
+    .btn-send:hover:not(:disabled),
+    .btn-send:focus:not(:disabled) {
+      background: var(--send-green-hover);
+      color: #fff;
+    }
+
+    .btn-send:disabled {
+      opacity: 0.75;
+      cursor: not-allowed;
+    }
+
+    .preview-card {
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      background: #fff;
+      border: 1px dashed #adb5bd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-3 px-3">
+    <h1 class="h5 text-center mb-1 fw-bold">帰宅連絡</h1>
+    <p class="text-center text-muted small mb-3">終了時間・夕飯・予定（予想帰宅）を選んで送信</p>
+
+    <p class="small fw-semibold text-secondary mb-2">いつ終わる？</p>
+    <div class="d-grid gap-2 mb-4" id="patternGroup">
+      <button type="button" class="btn pattern-btn" data-index="0" aria-pressed="false">
+        17時半終了
+        <span class="small">到着 19:00前</span>
+      </button>
+      <button type="button" class="btn pattern-btn" data-index="1" aria-pressed="false">
+        18時前終了
+        <span class="small">到着 19:00すぎ</span>
+      </button>
+      <button type="button" class="btn pattern-btn" data-index="2" aria-pressed="false">
+        18時半終了
+        <span class="small">到着 20:00前</span>
+      </button>
+      <button type="button" class="btn pattern-btn" data-index="3" aria-pressed="false">
+        19時半終了
+        <span class="small">到着 21:00前</span>
+      </button>
+      <button type="button" class="btn pattern-btn" data-index="4" aria-pressed="false">
+        20時半終了
+        <span class="small">到着 22:00前</span>
+      </button>
+    </div>
+
+    <p class="small fw-semibold text-secondary mb-2">夕飯</p>
+    <div class="segment-wrap mb-3" role="group" aria-label="夕飯">
+      <input type="radio" name="dinner" id="d-home" value="home" checked />
+      <label for="d-home">家で食べる</label>
+      <input type="radio" name="dinner" id="d-eat" value="eatOut" />
+      <label for="d-eat">食べて帰る</label>
+      <input type="radio" name="dinner" id="d-none" value="none" />
+      <label for="d-none">いらない</label>
+    </div>
+
+    <p class="small fw-semibold text-secondary mb-2">予定</p>
+    <div class="segment-wrap mb-3" role="group" aria-label="予定ありなし">
+      <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
+      <label for="s-none">予定なし</label>
+      <input type="radio" name="scheduleMode" id="s-has" value="has" />
+      <label for="s-has">予定あり</label>
+    </div>
+
+    <div id="scheduleFields" class="border rounded-3 p-3 mb-3 d-none bg-white">
+      <label for="scheduleTime" class="form-label small fw-semibold mb-1">予想帰宅時間</label>
+      <select id="scheduleTime" class="form-select mb-2">
+        <option value="">選択してください</option>
+        <option value="19:00">19:00</option>
+        <option value="19:30">19:30</option>
+        <option value="20:00">20:00</option>
+        <option value="20:30">20:30</option>
+        <option value="21:00">21:00</option>
+        <option value="21:30">21:30</option>
+        <option value="22:00">22:00</option>
+      </select>
+
+      <label for="scheduleDetail" class="form-label small fw-semibold mb-1">予定の内容</label>
+      <input
+        id="scheduleDetail"
+        type="text"
+        maxlength="60"
+        class="form-control"
+        placeholder="例：買い物、病院、打ち合わせ"
+      />
+    </div>
+
+    <p class="small fw-semibold text-secondary mb-2">プレビュー</p>
+    <div class="preview-card rounded-3 p-3 mb-2" id="preview"></div>
+  </div>
+
+  <div class="send-bar">
+    <div class="container px-3">
+      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">
+        LINEを送る
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    var ARRIVALS = ['19:00前', '19:00すぎ', '20:00前', '21:00前', '22:00前'];
+    var DINNER_TEXT = {
+      home: '家で食べます',
+      eatOut: '食べて帰ります',
+      none: 'いりません'
+    };
+
+    var patternButtons = document.querySelectorAll('.pattern-btn');
+    var btnSend = document.getElementById('btnSend');
+    var preview = document.getElementById('preview');
+    var scheduleFields = document.getElementById('scheduleFields');
+    var scheduleTime = document.getElementById('scheduleTime');
+    var scheduleDetail = document.getElementById('scheduleDetail');
+    var selectedIndex = 0;
+
+    function defaultPatternIndex() {
+      var h = new Date().getHours();
+      if (h < 17) return 0;
+      if (h < 18) return 1;
+      if (h < 19) return 2;
+      if (h < 20) return 3;
+      return 4;
+    }
+
+    function setPattern(index) {
+      selectedIndex = index;
+      patternButtons.forEach(function (btn) {
+        var i = parseInt(btn.getAttribute('data-index'), 10);
+        var on = i === index;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      updatePreview();
+    }
+
+    function getDinnerKey() {
+      var r = document.querySelector('input[name="dinner"]:checked');
+      return r ? r.value : 'home';
+    }
+
+    function hasSchedule() {
+      var r = document.querySelector('input[name="scheduleMode"]:checked');
+      return !!r && r.value === 'has';
+    }
+
+    function updateScheduleFields() {
+      var show = hasSchedule();
+      scheduleFields.classList.toggle('d-none', !show);
+      updatePreview();
+    }
+
+    function updatePreview() {
+      var dk = getDinnerKey();
+      var text = '🏠 今から帰ります！\\n';
+      if (hasSchedule()) {
+        var st = scheduleTime.value || '（未選択）';
+        var sd = (scheduleDetail.value || '').trim() || '（内容未入力）';
+        text +=
+          '📌【予定】' + sd + '\\n' +
+          '🕒【到着予定（予想）】' + st + '\\n' +
+          '🍚【夕飯】' + DINNER_TEXT[dk];
+      } else {
+        text +=
+          '🕒【到着予定】' + ARRIVALS[selectedIndex] + '\\n' +
+          '🍚【夕飯】' + DINNER_TEXT[dk];
+      }
+      preview.textContent = text;
+    }
+
+    patternButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setPattern(parseInt(btn.getAttribute('data-index'), 10));
+      });
+    });
+
+    document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
+      el.addEventListener('change', updatePreview);
+    });
+
+    document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
+      el.addEventListener('change', updateScheduleFields);
+    });
+    scheduleTime.addEventListener('change', updatePreview);
+    scheduleDetail.addEventListener('input', updatePreview);
+
+    setPattern(defaultPatternIndex());
+
+    btnSend.addEventListener('click', function () {
+      if (btnSend.disabled) return;
+      if (hasSchedule()) {
+        if (!scheduleTime.value) {
+          alert('予想帰宅時間を選択してください');
+          return;
+        }
+        if (!scheduleDetail.value.trim()) {
+          alert('予定の内容を入力してください');
+          return;
+        }
+      }
+      btnSend.disabled = true;
+      btnSend.textContent = '送信中...';
+
+      fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          patternIndex: selectedIndex,
+          dinnerKey: getDinnerKey(),
+          hasSchedule: hasSchedule(),
+          scheduleTime: scheduleTime.value,
+          scheduleDetail: scheduleDetail.value.trim()
+        })
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (out) {
+          btnSend.disabled = false;
+          btnSend.textContent = 'LINEを送る';
+          if (out.ok && out.data && out.data.ok) {
+            alert('送信しました');
+          } else {
+            alert((out.data && out.data.error) || '送信に失敗しました');
+          }
+        })
+        .catch(function (err) {
+          btnSend.disabled = false;
+          btnSend.textContent = 'LINEを送る';
+          alert(err && err.message ? err.message : String(err));
+        });
+    });
+  </script>
+</body>
+</html>
+`;

@@ -1,0 +1,18 @@
+# Cloudflare Workers: 帰宅連絡 + LINE Webhook
+# 1) cd workers/line-notification && npm install
+# 2) npx wrangler d1 create line-notification-log
+# 3) 表示された database_id を下の database_id に貼る
+# 4) npx wrangler d1 migrations apply line-notification-log --local
+# 5) npx wrangler d1 migrations apply line-notification-log --remote
+# 6) npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN / LINE_TO_ID（任意で LINE_CHANNEL_SECRET）
+# 7) npx wrangler deploy
+# LINE Developers の Webhook URL は https://<あなたのWorker>/webhook
+
+name = "line-notification-home"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "line-notification-log"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
