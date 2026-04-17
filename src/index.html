@@ -269,18 +269,18 @@
 
     function updatePreview() {
       var dk = getDinnerKey();
-      var text = '今から帰ります！\n';
+      var text = '🏠 今から帰ります！\n';
       if (hasSchedule()) {
         var st = scheduleTime.value || '（未選択）';
         var sd = (scheduleDetail.value || '').trim() || '（内容未入力）';
         text +=
-          '【予定】' + sd + '\n' +
-          '【到着予定（予想）】' + st + '\n' +
-          '【夕飯】' + DINNER_TEXT[dk];
+          '📌【予定】' + sd + '\n' +
+          '🕒【到着予定（予想）】' + st + '\n' +
+          '🍚【夕飯】' + DINNER_TEXT[dk];
       } else {
         text +=
-          '【到着予定】' + ARRIVALS[selectedIndex] + '\n' +
-          '【夕飯】' + DINNER_TEXT[dk];
+          '🕒【到着予定】' + ARRIVALS[selectedIndex] + '\n' +
+          '🍚【夕飯】' + DINNER_TEXT[dk];
       }
       preview.textContent = text;
     }
