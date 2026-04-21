@@ -14,6 +14,7 @@ Google アカウントの切り替えに悩まず、**Git から `wrangler deplo
 - **LINE Webhook**: `POST /webhook`（グループ ID 取得補助・個別トークからログ参照）  
 
 セットアップ手順は [docs/workers-setup.md](docs/workers-setup.md) を参照してください。実装は [workers/line-notification/](workers/line-notification/) にあります。
+`main` へ push 時に Cloudflare へ自動デプロイする workflow は `.github/workflows/deploy-worker.yml` です。
 
 ## 従来の構成（Google Apps Script）
 

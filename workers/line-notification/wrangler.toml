@@ -15,4 +15,4 @@ compatibility_date = "2024-11-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "line-notification-log"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "a1e04781-430f-4773-959c-b583ef069a8a"
