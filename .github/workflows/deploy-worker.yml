@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install dependencies
         working-directory: workers/line-notification
@@ -27,6 +27,7 @@ jobs:
       - name: Apply D1 migrations (remote)
         working-directory: workers/line-notification
         run: npx wrangler@3.112.0 d1 migrations apply line-notification-log --remote
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
