@@ -14,13 +14,13 @@ export const DINNER_LABELS: Record<string, string> = {
   none: 'いりません'
 };
 
-/** 仕事帰りにありがちなこと（任意） */
-export const SITUATION_LABELS: Record<string, string> = {
-  none: '',
+/** 1行目の題名（状態） */
+export const SITUATION_TITLES: Record<string, string> = {
+  none: 'そのまま帰ります',
   overtime: '残業になりそうです',
   drinking: '飲み会があります',
-  late: '少し遅れる見込みです',
-  errand: '帰り道で寄り道があります'
+  late: '少し遅れそうです',
+  errand: '寄り道があります'
 };
 
 export const PATTERN_PRESETS: Record<string, { label: string; patterns: { label: string; arrival: string }[] }> = {
@@ -57,34 +57,36 @@ export function resolveMessageMode(hasSchedule: boolean): MessageMode {
   return hasSchedule ? 'withSchedule' : 'standard';
 }
 
-export function resolveSituationLine(situationKey: string): string {
-  if (!situationKey || situationKey === 'none') return '';
-  return SITUATION_LABELS[situationKey] ?? '';
+export function resolveTitle(input: {
+  messageMode: MessageMode;
+  scheduleDetail: string;
+  situationKey: string;
+}): string {
+  if (input.messageMode === 'withSchedule') {
+    return '予定：' + input.scheduleDetail;
+  }
+  const key = input.situationKey || 'none';
+  return SITUATION_TITLES[key] ?? SITUATION_TITLES.none;
 }
 
 export function buildMessageText(input: {
   messageMode: MessageMode;
-  patternLabel: string;
   arrival: string;
   dinnerLine: string;
   scheduleTime: string;
   scheduleDetail: string;
-  situationLine: string;
+  situationKey: string;
 }): string {
-  const lines: string[] = [];
+  const title = resolveTitle({
+    messageMode: input.messageMode,
+    scheduleDetail: input.scheduleDetail,
+    situationKey: input.situationKey
+  });
 
-  if (input.messageMode === 'withSchedule') {
-    lines.push('📌【予定】' + input.scheduleDetail);
-    lines.push('🕒【到着予定（予想）】' + input.scheduleTime);
-    lines.push('🍚【夕飯】' + input.dinnerLine);
-  } else if (input.situationLine) {
-    lines.push('📌【備考】' + input.situationLine);
-    lines.push('🕒【到着予定】' + input.arrival);
-    lines.push('🍚【夕飯】' + input.dinnerLine);
-  } else {
-    lines.push('🕒【到着予定】' + input.arrival);
-    lines.push('🍚【夕飯】' + input.dinnerLine);
-  }
+  const arrivalText =
+    input.messageMode === 'withSchedule' ? input.scheduleTime : input.arrival;
+
+  const lines = [title, '🕒【到着】' + arrivalText, '🍚【夕飯】' + input.dinnerLine];
 
   return lines.slice(0, MAX_MESSAGE_LINES).join('\n');
 }
@@ -96,35 +98,32 @@ export function getSendButtonLabel(): string {
 /** クライアントプレビュー用（page-html / liff-html に埋め込み） */
 export function getMessageBuilderClientScript(): string {
   return `
-var SITUATION_TEXT = {
-  none: '',
+var SITUATION_TITLES = {
+  none: 'そのまま帰ります',
   overtime: '残業になりそうです',
   drinking: '飲み会があります',
-  late: '少し遅れる見込みです',
-  errand: '帰り道で寄り道があります'
+  late: '少し遅れそうです',
+  errand: '寄り道があります'
 };
 var MAX_MESSAGE_LINES = 3;
 function resolveMessageMode(hasSchedule) {
   return hasSchedule ? 'withSchedule' : 'standard';
 }
-function resolveSituationLine(key) {
-  if (!key || key === 'none') return '';
-  return SITUATION_TEXT[key] || '';
+function resolveTitle(opts) {
+  if (opts.messageMode === 'withSchedule') {
+    return '予定：' + opts.scheduleDetail;
+  }
+  var key = opts.situationKey || 'none';
+  return SITUATION_TITLES[key] || SITUATION_TITLES.none;
 }
 function buildMessageText(opts) {
-  var lines = [];
-  if (opts.messageMode === 'withSchedule') {
-    lines.push('📌【予定】' + opts.scheduleDetail);
-    lines.push('🕒【到着予定（予想）】' + opts.scheduleTime);
-    lines.push('🍚【夕飯】' + opts.dinnerLine);
-  } else if (opts.situationLine) {
-    lines.push('📌【備考】' + opts.situationLine);
-    lines.push('🕒【到着予定】' + opts.arrival);
-    lines.push('🍚【夕飯】' + opts.dinnerLine);
-  } else {
-    lines.push('🕒【到着予定】' + opts.arrival);
-    lines.push('🍚【夕飯】' + opts.dinnerLine);
-  }
+  var title = resolveTitle({
+    messageMode: opts.messageMode,
+    scheduleDetail: opts.scheduleDetail,
+    situationKey: opts.situationKey
+  });
+  var arrivalText = opts.messageMode === 'withSchedule' ? opts.scheduleTime : opts.arrival;
+  var lines = [title, '🕒【到着】' + arrivalText, '🍚【夕飯】' + opts.dinnerLine];
   return lines.slice(0, MAX_MESSAGE_LINES).join('\\n');
 }
 function getSendButtonLabel() {

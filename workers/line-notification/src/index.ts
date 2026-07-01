@@ -5,10 +5,9 @@ import {
   DINNER_LABELS,
   FREE_MONTHLY_SEND_LIMIT,
   PATTERNS,
-  SITUATION_LABELS,
+  SITUATION_TITLES,
   buildMessageText,
   resolveMessageMode,
-  resolveSituationLine,
   type MessageMode
 } from './message-builder';
 import { ABOUT_HTML } from './about-html';
@@ -272,11 +271,11 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
   if (!Object.prototype.hasOwnProperty.call(DINNER_LABELS, dinnerKey)) {
     return jsonResponse({ ok: false, error: '夕飯オプションが不正です。' }, 400);
   }
-  if (!Object.prototype.hasOwnProperty.call(SITUATION_LABELS, situationKey)) {
-    return jsonResponse({ ok: false, error: '備考の選択が不正です。' }, 400);
+  if (!Object.prototype.hasOwnProperty.call(SITUATION_TITLES, situationKey)) {
+    return jsonResponse({ ok: false, error: '状態の選択が不正です。' }, 400);
   }
   if (hasSchedule && situationKey !== 'none') {
-    return jsonResponse({ ok: false, error: '予定ありのときは備考を選べません。予定の内容に書いてください。' }, 400);
+    return jsonResponse({ ok: false, error: '予定ありのときは状態を選べません。予定の内容に書いてください。' }, 400);
   }
 
   const pattern = patterns[patternIndex];
@@ -293,12 +292,11 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
 
   const text = buildMessageText({
     messageMode,
-    patternLabel: pattern.label,
     arrival: pattern.arrival,
     dinnerLine,
     scheduleTime,
     scheduleDetail,
-    situationLine: resolveSituationLine(situationKey)
+    situationKey
   });
 
   const lineRes = await linePush(toId, [{ type: 'text', text }], token);

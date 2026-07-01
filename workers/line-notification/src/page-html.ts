@@ -33,9 +33,9 @@ export const PAGE_HTML = `<!DOCTYPE html>
     </div>
 
     <div id="situationWrap">
-      <p class="small fw-semibold text-secondary mb-2">あったら選ぶ（任意）</p>
-      <select id="situationKey" class="form-select mb-3" aria-label="仕事帰りの備考">
-        <option value="none">特になし</option>
+      <p class="small fw-semibold text-secondary mb-2">題名（どんな感じ？）</p>
+      <select id="situationKey" class="form-select mb-3" aria-label="題名">
+        <option value="none">そのまま帰る</option>
         <option value="overtime">残業しそう</option>
         <option value="drinking">飲み会</option>
         <option value="late">遅れそう</option>
@@ -185,12 +185,11 @@ export const PAGE_HTML = `<!DOCTYPE html>
       var p = patterns[selectedIndex] || { label: '', arrival: '' };
       var text = buildMessageText({
         messageMode: mode,
-        patternLabel: p.label,
         arrival: p.arrival,
         dinnerLine: DINNER_TEXT[getDinnerKey()],
         scheduleTime: scheduleTime.value || '（未選択）',
         scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
-        situationLine: resolveSituationLine(getSituationKey())
+        situationKey: getSituationKey()
       });
       preview.textContent = text;
       btnSend.textContent = getSendButtonLabel();

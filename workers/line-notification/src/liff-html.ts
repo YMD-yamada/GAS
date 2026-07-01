@@ -82,9 +82,9 @@ export function buildLiffHtml(liffId: string): string {
       </div>
 
       <div id="situationWrap">
-        <p class="small fw-semibold text-secondary mb-2">あったら選ぶ（任意）</p>
+        <p class="small fw-semibold text-secondary mb-2">題名（どんな感じ？）</p>
         <select id="situationKey" class="form-select mb-3">
-          <option value="none">特になし</option>
+          <option value="none">そのまま帰る</option>
           <option value="overtime">残業しそう</option>
           <option value="drinking">飲み会</option>
           <option value="late">遅れそう</option>
@@ -230,12 +230,11 @@ export function buildLiffHtml(liffId: string): string {
       var p = patterns[selectedIndex] || { label: '', arrival: '' };
       preview.textContent = buildMessageText({
         messageMode: mode,
-        patternLabel: p.label,
         arrival: p.arrival,
         dinnerLine: DINNER_TEXT[getDinnerKey()],
         scheduleTime: scheduleTime.value || '（未選択）',
         scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
-        situationLine: resolveSituationLine(getSituationKey())
+        situationKey: getSituationKey()
       });
       btnSend.textContent = getSendButtonLabel();
     }
