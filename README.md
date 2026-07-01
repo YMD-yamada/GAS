@@ -16,6 +16,8 @@ Google アカウントの切り替えに悩まず、**Git から `wrangler deplo
 セットアップ手順は [docs/workers-setup.md](docs/workers-setup.md) を参照してください。実装は [workers/line-notification/](workers/line-notification/) にあります。
 `main` へ push 時に Cloudflare へ自動デプロイする workflow は `.github/workflows/deploy-worker.yml` です。
 
+**公開 URL（個人利用）**: https://line-notification-home.ymd-hude.workers.dev/
+
 ## 従来の構成（Google Apps Script）
 
 既存の GAS 版は `src/Code.gs` と `src/index.html` のまま利用できます。

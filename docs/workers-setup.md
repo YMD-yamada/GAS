@@ -17,10 +17,10 @@ Google アカウントに依存せず、**Cloudflare** 上で Web 画面・LINE 
 2. **D1 マイグレーション** — GitHub Actions が push 時に自動適用します。手動の場合は `0002_add_message_mode.sql` まで実行（個人利用に必須）。
 
 3. **LINE Developers**
-   - Webhook URL: `https://line-notification-home.<あなた>.workers.dev/webhook`
+   - Webhook URL: `https://line-notification-home.ymd-hude.workers.dev/webhook`
    - Webhook の利用: オン
 
-4. **スマホで使う** — ブラウザで Worker の `/` を開き、ホーム画面に追加（PWA）
+4. **スマホで使う** — https://line-notification-home.ymd-hude.workers.dev/ を開き、ホーム画面に追加（PWA）
 
 ### 送信画面の使い方
 
