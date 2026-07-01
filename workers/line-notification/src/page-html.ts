@@ -19,7 +19,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
     <h1 class="h5 text-center mb-1 fw-bold">おかえり連絡</h1>
     <p class="text-center text-muted small mb-3">仕事終了予定・帰宅時間を家族にLINEで送る</p>
 
-    <p class="small fw-semibold text-secondary mb-2">いつ終わる？</p>
+    <p class="small fw-semibold text-secondary mb-2">何ごろ帰る？</p>
     <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
 
     <p class="small fw-semibold text-secondary mb-2">夕飯</p>
@@ -79,7 +79,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
 
   <div class="send-bar">
     <div class="container px-3">
-      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了予定をLINEに送る</button>
+      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">LINEに送る</button>
     </div>
   </div>
 
@@ -136,7 +136,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
         btn.type = 'button';
         btn.className = 'btn pattern-btn';
         btn.setAttribute('data-index', String(i));
-        btn.innerHTML = p.label + '<span class="small d-block">到着 ' + p.arrival + '</span>';
+        btn.innerHTML = '到着 ' + p.arrival;
         btn.addEventListener('click', function () { setPattern(i); });
         patternGroup.appendChild(btn);
       });

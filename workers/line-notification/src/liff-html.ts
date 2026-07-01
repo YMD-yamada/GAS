@@ -68,7 +68,7 @@ export function buildLiffHtml(liffId: string): string {
       <p class="text-center text-muted small mb-2">仕事終了予定・帰宅時間を家族にLINEで送る</p>
       <p class="text-center small mb-3" id="planBadge"></p>
 
-      <p class="small fw-semibold text-secondary mb-2">いつ終わる？</p>
+      <p class="small fw-semibold text-secondary mb-2">何ごろ帰る？</p>
       <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
 
       <p class="small fw-semibold text-secondary mb-2">夕飯</p>
@@ -119,7 +119,7 @@ export function buildLiffHtml(liffId: string): string {
 
     <div class="send-bar">
       <div class="container px-3">
-        <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了予定をLINEに送る</button>
+        <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">LINEに送る</button>
       </div>
     </div>
   </div>
@@ -188,7 +188,7 @@ export function buildLiffHtml(liffId: string): string {
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn pattern-btn';
-        btn.innerHTML = p.label + '<span class="small d-block">到着 ' + p.arrival + '</span>';
+        btn.innerHTML = '到着 ' + p.arrival;
         btn.addEventListener('click', function () { setPattern(i); });
         patternGroup.appendChild(btn);
       });

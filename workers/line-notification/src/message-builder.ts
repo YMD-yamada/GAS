@@ -51,6 +51,7 @@ export const PATTERN_PRESETS: Record<string, { label: string; patterns: { label:
 };
 
 export const FREE_MONTHLY_SEND_LIMIT = 30;
+export const MAX_MESSAGE_LINES = 3;
 
 export function resolveMessageMode(hasSchedule: boolean): MessageMode {
   return hasSchedule ? 'withSchedule' : 'standard';
@@ -70,26 +71,26 @@ export function buildMessageText(input: {
   scheduleDetail: string;
   situationLine: string;
 }): string {
-  const lines: string[] = ['💼 仕事終了予定の連絡です'];
+  const lines: string[] = [];
 
   if (input.messageMode === 'withSchedule') {
     lines.push('📌【予定】' + input.scheduleDetail);
     lines.push('🕒【到着予定（予想）】' + input.scheduleTime);
     lines.push('🍚【夕飯】' + input.dinnerLine);
+  } else if (input.situationLine) {
+    lines.push('📌【備考】' + input.situationLine);
+    lines.push('🕒【到着予定】' + input.arrival);
+    lines.push('🍚【夕飯】' + input.dinnerLine);
   } else {
-    lines.push('🕐【終了予定】' + input.patternLabel);
-    if (input.situationLine) {
-      lines.push('📌【備考】' + input.situationLine);
-    }
     lines.push('🕒【到着予定】' + input.arrival);
     lines.push('🍚【夕飯】' + input.dinnerLine);
   }
 
-  return lines.join('\n');
+  return lines.slice(0, MAX_MESSAGE_LINES).join('\n');
 }
 
 export function getSendButtonLabel(): string {
-  return '仕事終了予定をLINEに送る';
+  return 'LINEに送る';
 }
 
 /** クライアントプレビュー用（page-html / liff-html に埋め込み） */
@@ -102,6 +103,7 @@ var SITUATION_TEXT = {
   late: '少し遅れる見込みです',
   errand: '帰り道で寄り道があります'
 };
+var MAX_MESSAGE_LINES = 3;
 function resolveMessageMode(hasSchedule) {
   return hasSchedule ? 'withSchedule' : 'standard';
 }
@@ -110,21 +112,23 @@ function resolveSituationLine(key) {
   return SITUATION_TEXT[key] || '';
 }
 function buildMessageText(opts) {
-  var lines = ['💼 仕事終了予定の連絡です'];
+  var lines = [];
   if (opts.messageMode === 'withSchedule') {
     lines.push('📌【予定】' + opts.scheduleDetail);
     lines.push('🕒【到着予定（予想）】' + opts.scheduleTime);
     lines.push('🍚【夕飯】' + opts.dinnerLine);
+  } else if (opts.situationLine) {
+    lines.push('📌【備考】' + opts.situationLine);
+    lines.push('🕒【到着予定】' + opts.arrival);
+    lines.push('🍚【夕飯】' + opts.dinnerLine);
   } else {
-    lines.push('🕐【終了予定】' + opts.patternLabel);
-    if (opts.situationLine) lines.push('📌【備考】' + opts.situationLine);
     lines.push('🕒【到着予定】' + opts.arrival);
     lines.push('🍚【夕飯】' + opts.dinnerLine);
   }
-  return lines.join('\\n');
+  return lines.slice(0, MAX_MESSAGE_LINES).join('\\n');
 }
 function getSendButtonLabel() {
-  return '仕事終了予定をLINEに送る';
+  return 'LINEに送る';
 }
 `.trim();
 }
