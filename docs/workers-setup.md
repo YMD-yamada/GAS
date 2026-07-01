@@ -60,12 +60,14 @@ Google アカウントに依存せず、**Cloudflare** 上で Web 画面・LINE 
 
 ## 3. マイグレーション
 
-GitHub Actions が `d1 migrations apply --remote` を実行します。
+GitHub Actions が `d1 migrations apply --remote` を実行します（失敗してもデプロイは続行）。
 
 手動の場合（D1 SQL コンソール）:
 
-- `migrations/0001_init.sql`
-- `migrations/0002_add_message_mode.sql`（個人利用で必須）
+```sql
+-- 0002（個人利用で推奨）
+ALTER TABLE notification_log ADD COLUMN message_mode TEXT;
+```
 
 `0003_multi_tenant.sql` は第三者向け機能を使うときだけ必要です。
 
