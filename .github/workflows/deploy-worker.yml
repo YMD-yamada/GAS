@@ -26,7 +26,7 @@ jobs:
 
       - name: Apply D1 migrations (remote)
         working-directory: workers/line-notification
-        run: npx wrangler@3.112.0 d1 migrations apply line-notification-log --remote --yes
+        run: yes | npx wrangler@3.112.0 d1 migrations apply line-notification-log --remote
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
