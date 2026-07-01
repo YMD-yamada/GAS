@@ -1,4 +1,4 @@
-export type MessageMode = 'workEnd' | 'leavingNow' | 'scheduleOnly';
+export type MessageMode = 'standard' | 'withSchedule';
 
 export const PATTERNS = [
   { id: 'p1', label: '17時半終了', arrival: '19:00前' },
@@ -12,6 +12,15 @@ export const DINNER_LABELS: Record<string, string> = {
   home: '家で食べます',
   eatOut: '食べて帰ります',
   none: 'いりません'
+};
+
+/** 仕事帰りにありがちなこと（任意） */
+export const SITUATION_LABELS: Record<string, string> = {
+  none: '',
+  overtime: '残業になりそうです',
+  drinking: '飲み会があります',
+  late: '少し遅れる見込みです',
+  errand: '帰り道で寄り道があります'
 };
 
 export const PATTERN_PRESETS: Record<string, { label: string; patterns: { label: string; arrival: string }[] }> = {
@@ -43,10 +52,13 @@ export const PATTERN_PRESETS: Record<string, { label: string; patterns: { label:
 
 export const FREE_MONTHLY_SEND_LIMIT = 30;
 
-export function resolveMessageMode(hasSchedule: boolean, messageMode?: string): MessageMode {
-  if (hasSchedule) return 'scheduleOnly';
-  if (messageMode === 'leavingNow') return 'leavingNow';
-  return 'workEnd';
+export function resolveMessageMode(hasSchedule: boolean): MessageMode {
+  return hasSchedule ? 'withSchedule' : 'standard';
+}
+
+export function resolveSituationLine(situationKey: string): string {
+  if (!situationKey || situationKey === 'none') return '';
+  return SITUATION_LABELS[situationKey] ?? '';
 }
 
 export function buildMessageText(input: {
@@ -56,21 +68,19 @@ export function buildMessageText(input: {
   dinnerLine: string;
   scheduleTime: string;
   scheduleDetail: string;
+  situationLine: string;
 }): string {
-  const lines: string[] = [];
+  const lines: string[] = ['💼 仕事終了予定の連絡です'];
 
-  if (input.messageMode === 'scheduleOnly') {
-    lines.push('📋 予定の連絡です');
+  if (input.messageMode === 'withSchedule') {
     lines.push('📌【予定】' + input.scheduleDetail);
     lines.push('🕒【到着予定（予想）】' + input.scheduleTime);
     lines.push('🍚【夕飯】' + input.dinnerLine);
-  } else if (input.messageMode === 'leavingNow') {
-    lines.push('🏠 今から帰ります！');
-    lines.push('🕒【到着予定】' + input.arrival);
-    lines.push('🍚【夕飯】' + input.dinnerLine);
   } else {
-    lines.push('💼 仕事終了の連絡です');
     lines.push('🕐【終了予定】' + input.patternLabel);
+    if (input.situationLine) {
+      lines.push('📌【備考】' + input.situationLine);
+    }
     lines.push('🕒【到着予定】' + input.arrival);
     lines.push('🍚【夕飯】' + input.dinnerLine);
   }
@@ -78,44 +88,43 @@ export function buildMessageText(input: {
   return lines.join('\n');
 }
 
-export function getSendButtonLabel(mode: MessageMode): string {
-  if (mode === 'leavingNow') return '今から帰るとLINEに送る';
-  if (mode === 'scheduleOnly') return '予定をLINEに送る';
-  return '仕事終了をLINEに送る';
+export function getSendButtonLabel(): string {
+  return '仕事終了予定をLINEに送る';
 }
 
 /** クライアントプレビュー用（page-html / liff-html に埋め込み） */
 export function getMessageBuilderClientScript(): string {
   return `
-function resolveMessageMode(hasSchedule, messageMode) {
-  if (hasSchedule) return 'scheduleOnly';
-  if (messageMode === 'leavingNow') return 'leavingNow';
-  return 'workEnd';
+var SITUATION_TEXT = {
+  none: '',
+  overtime: '残業になりそうです',
+  drinking: '飲み会があります',
+  late: '少し遅れる見込みです',
+  errand: '帰り道で寄り道があります'
+};
+function resolveMessageMode(hasSchedule) {
+  return hasSchedule ? 'withSchedule' : 'standard';
+}
+function resolveSituationLine(key) {
+  if (!key || key === 'none') return '';
+  return SITUATION_TEXT[key] || '';
 }
 function buildMessageText(opts) {
-  var mode = opts.messageMode;
-  var lines = [];
-  if (mode === 'scheduleOnly') {
-    lines.push('📋 予定の連絡です');
+  var lines = ['💼 仕事終了予定の連絡です'];
+  if (opts.messageMode === 'withSchedule') {
     lines.push('📌【予定】' + opts.scheduleDetail);
     lines.push('🕒【到着予定（予想）】' + opts.scheduleTime);
     lines.push('🍚【夕飯】' + opts.dinnerLine);
-  } else if (mode === 'leavingNow') {
-    lines.push('🏠 今から帰ります！');
-    lines.push('🕒【到着予定】' + opts.arrival);
-    lines.push('🍚【夕飯】' + opts.dinnerLine);
   } else {
-    lines.push('💼 仕事終了の連絡です');
     lines.push('🕐【終了予定】' + opts.patternLabel);
+    if (opts.situationLine) lines.push('📌【備考】' + opts.situationLine);
     lines.push('🕒【到着予定】' + opts.arrival);
     lines.push('🍚【夕飯】' + opts.dinnerLine);
   }
   return lines.join('\\n');
 }
-function getSendButtonLabel(mode) {
-  if (mode === 'leavingNow') return '今から帰るとLINEに送る';
-  if (mode === 'scheduleOnly') return '予定をLINEに送る';
-  return '仕事終了をLINEに送る';
+function getSendButtonLabel() {
+  return '仕事終了予定をLINEに送る';
 }
 `.trim();
 }

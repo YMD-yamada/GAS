@@ -43,26 +43,17 @@ export const ABOUT_HTML = `<!DOCTYPE html>
         <div class="card h-100 border-0 shadow-sm">
           <div class="card-body text-center">
             <div class="feature-icon mb-2">💼</div>
-            <h2 class="h6 fw-bold">仕事終了の連絡</h2>
-            <p class="small text-muted mb-0">まだ帰らないときも、終了予定と到着目安を伝えられます</p>
+            <h2 class="h6 fw-bold">仕事終了予定の連絡</h2>
+            <p class="small text-muted mb-0">終了予定・到着目安・夕飯をまとめて伝えられます</p>
           </div>
         </div>
       </div>
       <div class="col-md-4">
         <div class="card h-100 border-0 shadow-sm">
           <div class="card-body text-center">
-            <div class="feature-icon mb-2">🏠</div>
-            <h2 class="h6 fw-bold">今から帰る</h2>
-            <p class="small text-muted mb-0">退勤・出発の瞬間にワンタップで連絡</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body text-center">
-            <div class="feature-icon mb-2">📋</div>
-            <h2 class="h6 fw-bold">予定あり</h2>
-            <p class="small text-muted mb-0">買い物・残業後の用事もまとめて連絡</p>
+            <div class="feature-icon mb-2">📌</div>
+            <h2 class="h6 fw-bold">備考・予定</h2>
+            <p class="small text-muted mb-0">残業・飲み会・寄り道などを選ぶか、予定を自由入力</p>
           </div>
         </div>
       </div>

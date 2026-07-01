@@ -65,16 +65,8 @@ export function buildLiffHtml(liffId: string): string {
   <div id="app" class="d-none">
     <div class="container py-3 px-3">
       <h1 class="h5 text-center mb-1 fw-bold">おかえり連絡</h1>
-      <p class="text-center text-muted small mb-2">仕事終了・帰宅予定を家族にLINEで送る</p>
+      <p class="text-center text-muted small mb-2">仕事終了予定・帰宅時間を家族にLINEで送る</p>
       <p class="text-center small mb-3" id="planBadge"></p>
-
-      <p class="small fw-semibold text-secondary mb-2">連絡の種類</p>
-      <div class="segment-wrap mb-3" id="messageModeWrap" role="group">
-        <input type="radio" name="messageMode" id="m-work" value="workEnd" checked />
-        <label for="m-work">仕事終了</label>
-        <input type="radio" name="messageMode" id="m-leave" value="leavingNow" />
-        <label for="m-leave">今から帰る</label>
-      </div>
 
       <p class="small fw-semibold text-secondary mb-2">いつ終わる？</p>
       <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
@@ -87,6 +79,17 @@ export function buildLiffHtml(liffId: string): string {
         <label for="d-eat">食べて帰る</label>
         <input type="radio" name="dinner" id="d-none" value="none" />
         <label for="d-none">いらない</label>
+      </div>
+
+      <div id="situationWrap">
+        <p class="small fw-semibold text-secondary mb-2">あったら選ぶ（任意）</p>
+        <select id="situationKey" class="form-select mb-3">
+          <option value="none">特になし</option>
+          <option value="overtime">残業しそう</option>
+          <option value="drinking">飲み会</option>
+          <option value="late">遅れそう</option>
+          <option value="errand">寄り道</option>
+        </select>
       </div>
 
       <p class="small fw-semibold text-secondary mb-2">予定</p>
@@ -116,7 +119,7 @@ export function buildLiffHtml(liffId: string): string {
 
     <div class="send-bar">
       <div class="container px-3">
-        <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了をLINEに送る</button>
+        <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了予定をLINEに送る</button>
       </div>
     </div>
   </div>
@@ -146,7 +149,8 @@ export function buildLiffHtml(liffId: string): string {
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
-    var messageModeWrap = document.getElementById('messageModeWrap');
+    var situationWrap = document.getElementById('situationWrap');
+    var situationKey = document.getElementById('situationKey');
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
     var toastEl = document.getElementById('toast');
@@ -198,9 +202,8 @@ export function buildLiffHtml(liffId: string): string {
       updatePreview();
     }
 
-    function getMessageModeRaw() {
-      var r = document.querySelector('input[name="messageMode"]:checked');
-      return r ? r.value : 'workEnd';
+    function getSituationKey() {
+      return situationKey ? situationKey.value : 'none';
     }
     function getDinnerKey() {
       var r = document.querySelector('input[name="dinner"]:checked');
@@ -211,13 +214,14 @@ export function buildLiffHtml(liffId: string): string {
       return !!r && r.value === 'has';
     }
     function effectiveMessageMode() {
-      return resolveMessageMode(hasSchedule(), getMessageModeRaw());
+      return resolveMessageMode(hasSchedule());
     }
 
     function updateScheduleFields() {
       var show = hasSchedule();
       scheduleFields.classList.toggle('d-none', !show);
-      messageModeWrap.classList.toggle('d-none', show);
+      situationWrap.classList.toggle('d-none', show);
+      if (show && situationKey) situationKey.value = 'none';
       updatePreview();
     }
 
@@ -230,9 +234,10 @@ export function buildLiffHtml(liffId: string): string {
         arrival: p.arrival,
         dinnerLine: DINNER_TEXT[getDinnerKey()],
         scheduleTime: scheduleTime.value || '（未選択）',
-        scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）'
+        scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
+        situationLine: resolveSituationLine(getSituationKey())
       });
-      btnSend.textContent = getSendButtonLabel(mode);
+      btnSend.textContent = getSendButtonLabel();
     }
 
     function loadPatternsFromSettings() {
@@ -315,9 +320,12 @@ export function buildLiffHtml(liffId: string): string {
       finishOnboarding();
     });
 
-    document.querySelectorAll('input[name="dinner"], input[name="messageMode"]').forEach(function (el) {
+    document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
       el.addEventListener('change', updatePreview);
     });
+    if (situationKey) {
+      situationKey.addEventListener('change', updatePreview);
+    }
     document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
       el.addEventListener('change', updateScheduleFields);
     });
@@ -342,7 +350,7 @@ export function buildLiffHtml(liffId: string): string {
           hasSchedule: hasSchedule(),
           scheduleTime: scheduleTime.value,
           scheduleDetail: scheduleDetail.value.trim(),
-          messageMode: getMessageModeRaw()
+          situationKey: getSituationKey()
         })
       })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })

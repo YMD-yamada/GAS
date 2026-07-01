@@ -17,15 +17,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
 <body>
   <div class="container py-3 px-3">
     <h1 class="h5 text-center mb-1 fw-bold">おかえり連絡</h1>
-    <p class="text-center text-muted small mb-3">仕事終了・帰宅予定を家族にLINEで送る</p>
-
-    <p class="small fw-semibold text-secondary mb-2">連絡の種類</p>
-    <div class="segment-wrap mb-3" id="messageModeWrap" role="group" aria-label="連絡の種類">
-      <input type="radio" name="messageMode" id="m-work" value="workEnd" checked />
-      <label for="m-work">仕事終了</label>
-      <input type="radio" name="messageMode" id="m-leave" value="leavingNow" />
-      <label for="m-leave">今から帰る</label>
-    </div>
+    <p class="text-center text-muted small mb-3">仕事終了予定・帰宅時間を家族にLINEで送る</p>
 
     <p class="small fw-semibold text-secondary mb-2">いつ終わる？</p>
     <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
@@ -38,6 +30,17 @@ export const PAGE_HTML = `<!DOCTYPE html>
       <label for="d-eat">食べて帰る</label>
       <input type="radio" name="dinner" id="d-none" value="none" />
       <label for="d-none">いらない</label>
+    </div>
+
+    <div id="situationWrap">
+      <p class="small fw-semibold text-secondary mb-2">あったら選ぶ（任意）</p>
+      <select id="situationKey" class="form-select mb-3" aria-label="仕事帰りの備考">
+        <option value="none">特になし</option>
+        <option value="overtime">残業しそう</option>
+        <option value="drinking">飲み会</option>
+        <option value="late">遅れそう</option>
+        <option value="errand">寄り道</option>
+      </select>
     </div>
 
     <p class="small fw-semibold text-secondary mb-2">予定</p>
@@ -76,7 +79,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
 
   <div class="send-bar">
     <div class="container px-3">
-      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了をLINEに送る</button>
+      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了予定をLINEに送る</button>
     </div>
   </div>
 
@@ -93,7 +96,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
   <script>
     ${CLIENT_SCRIPT}
 
-    var STORAGE_KEY = 'okaeri_prefs_v1';
+    var STORAGE_KEY = 'okaeri_prefs_v2';
     var DINNER_TEXT = { home: '家で食べます', eatOut: '食べて帰ります', none: 'いりません' };
     var patterns = [];
     var selectedIndex = 0;
@@ -101,7 +104,8 @@ export const PAGE_HTML = `<!DOCTYPE html>
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
-    var messageModeWrap = document.getElementById('messageModeWrap');
+    var situationWrap = document.getElementById('situationWrap');
+    var situationKey = document.getElementById('situationKey');
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
     var toastEl = document.getElementById('toast');
@@ -149,9 +153,8 @@ export const PAGE_HTML = `<!DOCTYPE html>
       updatePreview();
     }
 
-    function getMessageModeRaw() {
-      var r = document.querySelector('input[name="messageMode"]:checked');
-      return r ? r.value : 'workEnd';
+    function getSituationKey() {
+      return situationKey ? situationKey.value : 'none';
     }
 
     function getDinnerKey() {
@@ -165,13 +168,14 @@ export const PAGE_HTML = `<!DOCTYPE html>
     }
 
     function effectiveMessageMode() {
-      return resolveMessageMode(hasSchedule(), getMessageModeRaw());
+      return resolveMessageMode(hasSchedule());
     }
 
     function updateScheduleFields() {
       var show = hasSchedule();
       scheduleFields.classList.toggle('d-none', !show);
-      messageModeWrap.classList.toggle('d-none', show);
+      situationWrap.classList.toggle('d-none', show);
+      if (show && situationKey) situationKey.value = 'none';
       savePrefs();
       updatePreview();
     }
@@ -185,10 +189,11 @@ export const PAGE_HTML = `<!DOCTYPE html>
         arrival: p.arrival,
         dinnerLine: DINNER_TEXT[getDinnerKey()],
         scheduleTime: scheduleTime.value || '（未選択）',
-        scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）'
+        scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
+        situationLine: resolveSituationLine(getSituationKey())
       });
       preview.textContent = text;
-      btnSend.textContent = getSendButtonLabel(mode);
+      btnSend.textContent = getSendButtonLabel();
     }
 
     function savePrefs() {
@@ -196,7 +201,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           patternIndex: selectedIndex,
           dinnerKey: getDinnerKey(),
-          messageMode: getMessageModeRaw(),
+          situationKey: getSituationKey(),
           scheduleMode: hasSchedule() ? 'has' : 'none',
           scheduleTime: scheduleTime.value,
           scheduleDetail: scheduleDetail.value
@@ -213,9 +218,8 @@ export const PAGE_HTML = `<!DOCTYPE html>
           var d = document.querySelector('input[name="dinner"][value="' + p.dinnerKey + '"]');
           if (d) d.checked = true;
         }
-        if (p.messageMode) {
-          var m = document.querySelector('input[name="messageMode"][value="' + p.messageMode + '"]');
-          if (m) m.checked = true;
+        if (p.situationKey && situationKey) {
+          situationKey.value = p.situationKey;
         }
         if (p.scheduleMode === 'has') {
           document.getElementById('s-has').checked = true;
@@ -228,9 +232,12 @@ export const PAGE_HTML = `<!DOCTYPE html>
       } catch (e) {}
     }
 
-    document.querySelectorAll('input[name="dinner"], input[name="messageMode"]').forEach(function (el) {
+    document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
       el.addEventListener('change', function () { savePrefs(); updatePreview(); });
     });
+    if (situationKey) {
+      situationKey.addEventListener('change', function () { savePrefs(); updatePreview(); });
+    }
     document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
       el.addEventListener('change', updateScheduleFields);
     });
@@ -288,7 +295,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
           hasSchedule: hasSchedule(),
           scheduleTime: scheduleTime.value,
           scheduleDetail: scheduleDetail.value.trim(),
-          messageMode: getMessageModeRaw()
+          situationKey: getSituationKey()
         })
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })

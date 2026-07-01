@@ -5,8 +5,10 @@ import {
   DINNER_LABELS,
   FREE_MONTHLY_SEND_LIMIT,
   PATTERNS,
+  SITUATION_LABELS,
   buildMessageText,
   resolveMessageMode,
+  resolveSituationLine,
   type MessageMode
 } from './message-builder';
 import { ABOUT_HTML } from './about-html';
@@ -261,14 +263,20 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
   const hasSchedule = coerceBool(body.hasSchedule);
   const scheduleTime = String(body.scheduleTime ?? '').trim();
   const scheduleDetail = String(body.scheduleDetail ?? '').trim();
-  const messageModeRaw = String(body.messageMode ?? 'workEnd');
-  const messageMode = resolveMessageMode(hasSchedule, messageModeRaw);
+  const situationKey = String(body.situationKey ?? 'none');
+  const messageMode = resolveMessageMode(hasSchedule);
 
   if (!Number.isInteger(patternIndex) || patternIndex < 0 || patternIndex >= patterns.length) {
     return jsonResponse({ ok: false, error: '到着パターンが不正です。' }, 400);
   }
   if (!Object.prototype.hasOwnProperty.call(DINNER_LABELS, dinnerKey)) {
     return jsonResponse({ ok: false, error: '夕飯オプションが不正です。' }, 400);
+  }
+  if (!Object.prototype.hasOwnProperty.call(SITUATION_LABELS, situationKey)) {
+    return jsonResponse({ ok: false, error: '備考の選択が不正です。' }, 400);
+  }
+  if (hasSchedule && situationKey !== 'none') {
+    return jsonResponse({ ok: false, error: '予定ありのときは備考を選べません。予定の内容に書いてください。' }, 400);
   }
 
   const pattern = patterns[patternIndex];
@@ -289,7 +297,8 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
     arrival: pattern.arrival,
     dinnerLine,
     scheduleTime,
-    scheduleDetail
+    scheduleDetail,
+    situationLine: resolveSituationLine(situationKey)
   });
 
   const lineRes = await linePush(toId, [{ type: 'text', text }], token);
