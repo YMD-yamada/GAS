@@ -5,7 +5,9 @@
 # 4) npx wrangler d1 migrations apply line-notification-log --local
 # 5) npx wrangler d1 migrations apply line-notification-log --remote
 # 6) npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN / LINE_TO_ID（任意で LINE_CHANNEL_SECRET）
-# 7) npx wrangler deploy
+# 7) LIFF 利用時: npx wrangler secret put LIFF_ID
+# 8) 課金利用時: STRIPE_SECRET_KEY / STRIPE_PRICE_ID / STRIPE_WEBHOOK_SECRET
+# 9) npx wrangler deploy
 # LINE Developers の Webhook URL は https://<あなたのWorker>/webhook
 
 name = "line-notification-home"

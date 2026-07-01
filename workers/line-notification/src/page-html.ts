@@ -1,166 +1,34 @@
-/** 帰宅連絡 UI（GAS の index.html と同等。送信は /api/send へ fetch） */
+import { getMessageBuilderClientScript } from './message-builder';
+import { UI_STYLES } from './ui-styles';
+
+const CLIENT_SCRIPT = getMessageBuilderClientScript();
+
 export const PAGE_HTML = `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>帰宅連絡</title>
+  <meta name="theme-color" content="#198754" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>おかえり連絡</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    :root {
-      --pattern-active-bg: #0d6efd;
-      --pattern-active-color: #fff;
-      --pattern-muted: #e9ecef;
-      --send-green: #198754;
-      --send-green-hover: #157347;
-    }
-
-    body {
-      min-height: 100vh;
-      background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-      padding-bottom: 6rem;
-    }
-
-    .pattern-btn {
-      min-height: 4.25rem;
-      font-size: 1.05rem;
-      font-weight: 600;
-      border-width: 2px;
-      transition: transform 0.08s ease, box-shadow 0.15s ease;
-    }
-
-    .pattern-btn:not(.active) {
-      background: var(--pattern-muted);
-      border-color: #ced4da;
-      color: #495057;
-    }
-
-    .pattern-btn.active {
-      background: var(--pattern-active-bg);
-      border-color: var(--pattern-active-bg);
-      color: var(--pattern-active-color);
-      box-shadow: 0 0.35rem 0.85rem rgba(13, 110, 253, 0.45);
-      transform: scale(1.02);
-    }
-
-    .pattern-btn:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-
-    .pattern-btn .small {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 500;
-      opacity: 0.92;
-      margin-top: 0.15rem;
-    }
-
-    .segment-wrap {
-      display: flex;
-      border-radius: 0.5rem;
-      overflow: hidden;
-      border: 2px solid #dee2e6;
-      background: #fff;
-    }
-
-    .segment-wrap input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .segment-wrap label {
-      flex: 1;
-      margin: 0;
-      padding: 0.9rem 0.5rem;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      border-right: 1px solid #dee2e6;
-      background: #f8f9fa;
-      color: #495057;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .segment-wrap label:last-child {
-      border-right: none;
-    }
-
-    .segment-wrap input:checked + label {
-      background: var(--pattern-active-bg);
-      color: #fff;
-    }
-
-    .send-bar {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(8px);
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 -0.25rem 1rem rgba(0, 0, 0, 0.06);
-      z-index: 1000;
-    }
-
-    .btn-send {
-      min-height: 3.5rem;
-      font-size: 1.15rem;
-      font-weight: 700;
-      background: var(--send-green);
-      border: none;
-      color: #fff;
-    }
-
-    .btn-send:hover:not(:disabled),
-    .btn-send:focus:not(:disabled) {
-      background: var(--send-green-hover);
-      color: #fff;
-    }
-
-    .btn-send:disabled {
-      opacity: 0.75;
-      cursor: not-allowed;
-    }
-
-    .preview-card {
-      font-size: 0.9rem;
-      white-space: pre-wrap;
-      background: #fff;
-      border: 1px dashed #adb5bd;
-    }
-  </style>
+  <style>${UI_STYLES}</style>
 </head>
 <body>
   <div class="container py-3 px-3">
-    <h1 class="h5 text-center mb-1 fw-bold">帰宅連絡</h1>
-    <p class="text-center text-muted small mb-3">終了時間・夕飯・予定（予想帰宅）を選んで送信</p>
+    <h1 class="h5 text-center mb-1 fw-bold">おかえり連絡</h1>
+    <p class="text-center text-muted small mb-3">仕事終了・帰宅予定を家族にLINEで送る</p>
+
+    <p class="small fw-semibold text-secondary mb-2">連絡の種類</p>
+    <div class="segment-wrap mb-3" id="messageModeWrap" role="group" aria-label="連絡の種類">
+      <input type="radio" name="messageMode" id="m-work" value="workEnd" checked />
+      <label for="m-work">仕事終了</label>
+      <input type="radio" name="messageMode" id="m-leave" value="leavingNow" />
+      <label for="m-leave">今から帰る</label>
+    </div>
 
     <p class="small fw-semibold text-secondary mb-2">いつ終わる？</p>
-    <div class="d-grid gap-2 mb-4" id="patternGroup">
-      <button type="button" class="btn pattern-btn" data-index="0" aria-pressed="false">
-        17時半終了
-        <span class="small">到着 19:00前</span>
-      </button>
-      <button type="button" class="btn pattern-btn" data-index="1" aria-pressed="false">
-        18時前終了
-        <span class="small">到着 19:00すぎ</span>
-      </button>
-      <button type="button" class="btn pattern-btn" data-index="2" aria-pressed="false">
-        18時半終了
-        <span class="small">到着 20:00前</span>
-      </button>
-      <button type="button" class="btn pattern-btn" data-index="3" aria-pressed="false">
-        19時半終了
-        <span class="small">到着 21:00前</span>
-      </button>
-      <button type="button" class="btn pattern-btn" data-index="4" aria-pressed="false">
-        20時半終了
-        <span class="small">到着 22:00前</span>
-      </button>
-    </div>
+    <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
 
     <p class="small fw-semibold text-secondary mb-2">夕飯</p>
     <div class="segment-wrap mb-3" role="group" aria-label="夕飯">
@@ -198,15 +66,8 @@ export const PAGE_HTML = `<!DOCTYPE html>
         <option value="翌日 00:30">翌日 00:30</option>
         <option value="翌日 01:00">翌日 01:00</option>
       </select>
-
       <label for="scheduleDetail" class="form-label small fw-semibold mb-1">予定の内容</label>
-      <input
-        id="scheduleDetail"
-        type="text"
-        maxlength="60"
-        class="form-control"
-        placeholder="例：買い物、病院、打ち合わせ"
-      />
+      <input id="scheduleDetail" type="text" maxlength="60" class="form-control" placeholder="例：買い物、病院" />
     </div>
 
     <p class="small fw-semibold text-secondary mb-2">プレビュー</p>
@@ -215,28 +76,45 @@ export const PAGE_HTML = `<!DOCTYPE html>
 
   <div class="send-bar">
     <div class="container px-3">
-      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">
-        LINEを送る
-      </button>
+      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">仕事終了をLINEに送る</button>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" style="bottom:5.5rem!important">
+    <div id="toast" class="toast align-items-center text-bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody">送信しました</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    var ARRIVALS = ['19:00前', '19:00すぎ', '20:00前', '21:00前', '22:00前'];
-    var DINNER_TEXT = {
-      home: '家で食べます',
-      eatOut: '食べて帰ります',
-      none: 'いりません'
-    };
+    ${CLIENT_SCRIPT}
 
-    var patternButtons = document.querySelectorAll('.pattern-btn');
+    var STORAGE_KEY = 'okaeri_prefs_v1';
+    var DINNER_TEXT = { home: '家で食べます', eatOut: '食べて帰ります', none: 'いりません' };
+    var patterns = [];
+    var selectedIndex = 0;
+    var patternGroup = document.getElementById('patternGroup');
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
+    var messageModeWrap = document.getElementById('messageModeWrap');
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
-    var selectedIndex = 0;
+    var toastEl = document.getElementById('toast');
+    var toastBody = document.getElementById('toastBody');
+    var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 2500 }) : null;
+
+    function showToast(msg, ok) {
+      if (!toast) { alert(msg); return; }
+      toastBody.textContent = msg;
+      toastEl.classList.toggle('text-bg-success', ok !== false);
+      toastEl.classList.toggle('text-bg-danger', ok === false);
+      toast.show();
+    }
 
     function defaultPatternIndex() {
       var h = new Date().getHours();
@@ -244,18 +122,36 @@ export const PAGE_HTML = `<!DOCTYPE html>
       if (h < 18) return 1;
       if (h < 19) return 2;
       if (h < 20) return 3;
-      return 4;
+      return Math.min(4, patterns.length - 1);
+    }
+
+    function renderPatterns() {
+      patternGroup.innerHTML = '';
+      patterns.forEach(function (p, i) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn pattern-btn';
+        btn.setAttribute('data-index', String(i));
+        btn.innerHTML = p.label + '<span class="small d-block">到着 ' + p.arrival + '</span>';
+        btn.addEventListener('click', function () { setPattern(i); });
+        patternGroup.appendChild(btn);
+      });
     }
 
     function setPattern(index) {
       selectedIndex = index;
-      patternButtons.forEach(function (btn) {
-        var i = parseInt(btn.getAttribute('data-index'), 10);
+      patternGroup.querySelectorAll('.pattern-btn').forEach(function (btn, i) {
         var on = i === index;
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
+      savePrefs();
       updatePreview();
+    }
+
+    function getMessageModeRaw() {
+      var r = document.querySelector('input[name="messageMode"]:checked');
+      return r ? r.value : 'workEnd';
     }
 
     function getDinnerKey() {
@@ -268,61 +164,119 @@ export const PAGE_HTML = `<!DOCTYPE html>
       return !!r && r.value === 'has';
     }
 
+    function effectiveMessageMode() {
+      return resolveMessageMode(hasSchedule(), getMessageModeRaw());
+    }
+
     function updateScheduleFields() {
       var show = hasSchedule();
       scheduleFields.classList.toggle('d-none', !show);
+      messageModeWrap.classList.toggle('d-none', show);
+      savePrefs();
       updatePreview();
     }
 
     function updatePreview() {
-      var dk = getDinnerKey();
-      var text = '🏠 今から帰ります！\\n';
-      if (hasSchedule()) {
-        var st = scheduleTime.value || '（未選択）';
-        var sd = (scheduleDetail.value || '').trim() || '（内容未入力）';
-        text +=
-          '📌【予定】' + sd + '\\n' +
-          '🕒【到着予定（予想）】' + st + '\\n' +
-          '🍚【夕飯】' + DINNER_TEXT[dk];
-      } else {
-        text +=
-          '🕒【到着予定】' + ARRIVALS[selectedIndex] + '\\n' +
-          '🍚【夕飯】' + DINNER_TEXT[dk];
-      }
+      var mode = effectiveMessageMode();
+      var p = patterns[selectedIndex] || { label: '', arrival: '' };
+      var text = buildMessageText({
+        messageMode: mode,
+        patternLabel: p.label,
+        arrival: p.arrival,
+        dinnerLine: DINNER_TEXT[getDinnerKey()],
+        scheduleTime: scheduleTime.value || '（未選択）',
+        scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）'
+      });
       preview.textContent = text;
+      btnSend.textContent = getSendButtonLabel(mode);
     }
 
-    patternButtons.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        setPattern(parseInt(btn.getAttribute('data-index'), 10));
-      });
-    });
+    function savePrefs() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          patternIndex: selectedIndex,
+          dinnerKey: getDinnerKey(),
+          messageMode: getMessageModeRaw(),
+          scheduleMode: hasSchedule() ? 'has' : 'none',
+          scheduleTime: scheduleTime.value,
+          scheduleDetail: scheduleDetail.value
+        }));
+      } catch (e) {}
+    }
 
-    document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
-      el.addEventListener('change', updatePreview);
-    });
+    function loadPrefs() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        var p = JSON.parse(raw);
+        if (p.dinnerKey) {
+          var d = document.querySelector('input[name="dinner"][value="' + p.dinnerKey + '"]');
+          if (d) d.checked = true;
+        }
+        if (p.messageMode) {
+          var m = document.querySelector('input[name="messageMode"][value="' + p.messageMode + '"]');
+          if (m) m.checked = true;
+        }
+        if (p.scheduleMode === 'has') {
+          document.getElementById('s-has').checked = true;
+        }
+        if (p.scheduleTime) scheduleTime.value = p.scheduleTime;
+        if (p.scheduleDetail) scheduleDetail.value = p.scheduleDetail;
+        if (typeof p.patternIndex === 'number' && p.patternIndex < patterns.length) {
+          selectedIndex = p.patternIndex;
+        }
+      } catch (e) {}
+    }
 
+    document.querySelectorAll('input[name="dinner"], input[name="messageMode"]').forEach(function (el) {
+      el.addEventListener('change', function () { savePrefs(); updatePreview(); });
+    });
     document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
       el.addEventListener('change', updateScheduleFields);
     });
-    scheduleTime.addEventListener('change', updatePreview);
-    scheduleDetail.addEventListener('input', updatePreview);
+    scheduleTime.addEventListener('change', function () { savePrefs(); updatePreview(); });
+    scheduleDetail.addEventListener('input', function () { savePrefs(); updatePreview(); });
 
-    setPattern(defaultPatternIndex());
+    fetch('/api/patterns')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        patterns = (data && data.patterns) || [];
+        if (!patterns.length) {
+          patterns = [
+            { label: '17時半終了', arrival: '19:00前' },
+            { label: '18時前終了', arrival: '19:00すぎ' },
+            { label: '18時半終了', arrival: '20:00前' },
+            { label: '19時半終了', arrival: '21:00前' },
+            { label: '20時半終了', arrival: '22:00前' }
+          ];
+        }
+        renderPatterns();
+        loadPrefs();
+        if (!localStorage.getItem(STORAGE_KEY)) setPattern(defaultPatternIndex());
+        else setPattern(selectedIndex);
+        updateScheduleFields();
+      })
+      .catch(function () {
+        patterns = [
+          { label: '17時半終了', arrival: '19:00前' },
+          { label: '18時前終了', arrival: '19:00すぎ' },
+          { label: '18時半終了', arrival: '20:00前' },
+          { label: '19時半終了', arrival: '21:00前' },
+          { label: '20時半終了', arrival: '22:00前' }
+        ];
+        renderPatterns();
+        setPattern(defaultPatternIndex());
+        updateScheduleFields();
+      });
 
     btnSend.addEventListener('click', function () {
       if (btnSend.disabled) return;
       if (hasSchedule()) {
-        if (!scheduleTime.value) {
-          alert('予想帰宅時間を選択してください');
-          return;
-        }
-        if (!scheduleDetail.value.trim()) {
-          alert('予定の内容を入力してください');
-          return;
-        }
+        if (!scheduleTime.value) { showToast('予想帰宅時間を選択してください', false); return; }
+        if (!scheduleDetail.value.trim()) { showToast('予定の内容を入力してください', false); return; }
       }
       btnSend.disabled = true;
+      var prevLabel = btnSend.textContent;
       btnSend.textContent = '送信中...';
 
       fetch('/api/send', {
@@ -333,30 +287,27 @@ export const PAGE_HTML = `<!DOCTYPE html>
           dinnerKey: getDinnerKey(),
           hasSchedule: hasSchedule(),
           scheduleTime: scheduleTime.value,
-          scheduleDetail: scheduleDetail.value.trim()
+          scheduleDetail: scheduleDetail.value.trim(),
+          messageMode: getMessageModeRaw()
         })
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (out) {
           btnSend.disabled = false;
-          btnSend.textContent = 'LINEを送る';
+          btnSend.textContent = prevLabel;
           if (out.ok && out.data && out.data.ok) {
-            alert('送信しました');
+            showToast('送信しました', true);
+            savePrefs();
           } else {
-            alert((out.data && out.data.error) || '送信に失敗しました');
+            showToast((out.data && out.data.error) || '送信に失敗しました', false);
           }
         })
         .catch(function (err) {
           btnSend.disabled = false;
-          btnSend.textContent = 'LINEを送る';
-          alert(err && err.message ? err.message : String(err));
+          btnSend.textContent = prevLabel;
+          showToast(err && err.message ? err.message : String(err), false);
         });
     });
   </script>
 </body>
-</html>
-`;
+</html>`;
