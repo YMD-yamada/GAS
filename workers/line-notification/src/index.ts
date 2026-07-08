@@ -4,6 +4,7 @@ import { buildLiffHtml } from './liff-html';
 import {
   DINNER_LABELS,
   FREE_MONTHLY_SEND_LIMIT,
+  FREE_PATTERN_LIMIT,
   PATTERNS,
   SITUATION_TITLES,
   buildMessageText,
@@ -12,6 +13,7 @@ import {
 } from './message-builder';
 import { ABOUT_HTML } from './about-html';
 import { PAGE_HTML } from './page-html';
+import { PRIVACY_HTML } from './privacy-html';
 import {
   applyPatternPreset,
   ensureDefaultPatterns,
@@ -21,6 +23,7 @@ import {
   getTimePatterns,
   getUser,
   incrementMonthlySendCount,
+  limitPatternsForPlan,
   setUserPlan,
   upsertPrimaryGroupDestination,
   upsertUser
@@ -63,6 +66,9 @@ export default {
     }
     if (request.method === 'GET' && url.pathname === '/about') {
       return htmlResponse(ABOUT_HTML);
+    }
+    if (request.method === 'GET' && url.pathname === '/privacy') {
+      return htmlResponse(PRIVACY_HTML);
     }
     if (request.method === 'GET' && url.pathname === '/liff') {
       return htmlResponse(buildLiffHtml(env.LIFF_ID ?? ''));
@@ -111,13 +117,16 @@ export default {
 async function handleGetPatterns(request: Request, env: Env): Promise<Response> {
   const user = await resolveUser(request, env);
   if (user) {
-    const rows = await ensureDefaultPatterns(env.DB, user.lineUserId);
+    const u = await getUser(env.DB, user.lineUserId);
+    const rows = await ensureDefaultPatterns(env.DB, user.lineUserId, u?.plan ?? 'free');
     return jsonResponse({
-      patterns: rows.map((r) => ({ label: r.label, arrival: r.arrival_text, id: r.id }))
+      patterns: rows.map((r) => ({ label: r.label, arrival: r.arrival_text, id: r.id })),
+      patternLimit: u?.plan === 'premium' ? null : FREE_PATTERN_LIMIT
     });
   }
   return jsonResponse({
-    patterns: PATTERNS.map((p) => ({ label: p.label, arrival: p.arrival, id: p.id }))
+    patterns: PATTERNS.map((p) => ({ label: p.label, arrival: p.arrival, id: p.id })),
+    patternLimit: null
   });
 }
 
@@ -134,18 +143,20 @@ async function handleLiffAuth(request: Request, env: Env): Promise<Response> {
 
   await upsertUser(env.DB, verified.sub, verified.name);
   const destinations = await getDestinations(env.DB, verified.sub);
-  const patterns = await getTimePatterns(env.DB, verified.sub);
   const user = await getUser(env.DB, verified.sub);
+  const patterns = await getTimePatterns(env.DB, verified.sub);
   const needsOnboarding = patterns.length === 0;
+  const limited = await ensureDefaultPatterns(env.DB, verified.sub, user?.plan ?? 'free');
 
   return jsonResponse({
     ok: true,
     user: user ?? { line_user_id: verified.sub, display_name: verified.name, plan: 'free' },
     destinations,
-    patterns: patterns.map((p) => ({ id: p.id, label: p.label, arrival: p.arrival_text })),
+    patterns: limited.map((p) => ({ id: p.id, label: p.label, arrival: p.arrival_text })),
     needsOnboarding,
     monthlySends: await getMonthlySendCount(env.DB, verified.sub),
-    sendLimit: user?.plan === 'premium' ? null : FREE_MONTHLY_SEND_LIMIT
+    sendLimit: user?.plan === 'premium' ? null : FREE_MONTHLY_SEND_LIMIT,
+    patternLimit: user?.plan === 'premium' ? null : FREE_PATTERN_LIMIT
   });
 }
 
@@ -155,7 +166,7 @@ async function handleGetSettings(request: Request, env: Env): Promise<Response> 
 
   const u = await getUser(env.DB, user.lineUserId);
   const destinations = await getDestinations(env.DB, user.lineUserId);
-  const patterns = await ensureDefaultPatterns(env.DB, user.lineUserId);
+  const patterns = await ensureDefaultPatterns(env.DB, user.lineUserId, u?.plan ?? 'free');
 
   return jsonResponse({
     ok: true,
@@ -163,7 +174,8 @@ async function handleGetSettings(request: Request, env: Env): Promise<Response> 
     destinations,
     patterns: patterns.map((p) => ({ id: p.id, label: p.label, arrival: p.arrival_text })),
     monthlySends: await getMonthlySendCount(env.DB, user.lineUserId),
-    sendLimit: u?.plan === 'premium' ? null : FREE_MONTHLY_SEND_LIMIT
+    sendLimit: u?.plan === 'premium' ? null : FREE_MONTHLY_SEND_LIMIT,
+    patternLimit: u?.plan === 'premium' ? null : FREE_PATTERN_LIMIT
   });
 }
 
@@ -228,8 +240,8 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
       toId = dest.line_id;
     }
 
-    const userPatterns = await ensureDefaultPatterns(env.DB, lineUserId);
-    patterns = userPatterns.map((p, i) => ({
+    const userPatterns = await ensureDefaultPatterns(env.DB, lineUserId, userPlan);
+    patterns = limitPatternsForPlan(userPatterns, userPlan).map((p, i) => ({
       id: String(p.id),
       label: p.label,
       arrival: p.arrival_text,
@@ -563,7 +575,8 @@ async function handleDirectLogRequest(event: unknown, token: string, env: Env): 
     message?: { type?: string; text?: string };
     replyToken?: string;
   };
-  if (ev.type !== 'message' || !ev.source || ev.source.type !== 'user') return;
+  if (ev.type !== 'message' || !ev.source) return;
+  if (ev.source.type !== 'user' && ev.source.type !== 'group') return;
   if (!ev.message || ev.message.type !== 'text' || !ev.replyToken) return;
 
   const text = String(ev.message.text ?? '').trim();

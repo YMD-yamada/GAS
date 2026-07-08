@@ -1,4 +1,4 @@
-import { PATTERN_PRESETS, PATTERNS } from './message-builder';
+import { FREE_PATTERN_LIMIT, PATTERN_PRESETS, PATTERNS } from './message-builder';
 
 export type UserRow = {
   line_user_id: string;
@@ -131,12 +131,19 @@ export async function applyPatternPreset(
   }
 }
 
-export async function ensureDefaultPatterns(db: D1Database, lineUserId: string): Promise<TimePatternRow[]> {
+export async function ensureDefaultPatterns(
+  db: D1Database,
+  lineUserId: string,
+  plan = 'free'
+): Promise<TimePatternRow[]> {
   let patterns = await getTimePatterns(db, lineUserId);
-  if (patterns.length > 0) return patterns;
+  if (patterns.length > 0) {
+    return limitPatternsForPlan(patterns, plan);
+  }
 
-  for (let i = 0; i < PATTERNS.length; i++) {
-    const p = PATTERNS[i];
+  const seed = plan === 'premium' ? PATTERNS : PATTERNS.slice(0, FREE_PATTERN_LIMIT);
+  for (let i = 0; i < seed.length; i++) {
+    const p = seed[i];
     await db
       .prepare(
         `INSERT INTO time_patterns (user_line_id, sort_order, label, arrival_text)
@@ -145,7 +152,15 @@ export async function ensureDefaultPatterns(db: D1Database, lineUserId: string):
       .bind(lineUserId, i, p.label, p.arrival)
       .run();
   }
-  return getTimePatterns(db, lineUserId);
+  return limitPatternsForPlan(await getTimePatterns(db, lineUserId), plan);
+}
+
+export function limitPatternsForPlan(
+  patterns: TimePatternRow[],
+  plan: string
+): TimePatternRow[] {
+  if (plan === 'premium') return patterns;
+  return patterns.slice(0, FREE_PATTERN_LIMIT);
 }
 
 export async function getMonthlySendCount(db: D1Database, lineUserId: string): Promise<number> {

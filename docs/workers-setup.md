@@ -72,9 +72,23 @@ ALTER TABLE notification_log ADD COLUMN message_mode TEXT;
 
 `0003_multi_tenant.sql` は第三者向け機能を使うときだけ必要です。
 
-## 4. LINE ログコマンド（1:1 トーク）
+## 4. LINE ログコマンド
+
+個別トーク（1:1）および家族グループ内で次が使えます。
 
 - `最新` / `ログ 3` / `夕飯` / `到着` / `予定` / `ログ ヘルプ`
+
+## 第三者向けパス（コード済み）
+
+| URL | 用途 |
+|-----|------|
+| `/liff` | LIFF 送信 UI + 2ステップウィザード |
+| `/about` | ランディング・料金・広告枠 |
+| `/privacy` | プライバシーポリシー・利用規約 |
+
+第三者公開時は `LIFF_ID`・Stripe シークレット・`0003_multi_tenant.sql` を適用してください。
+
+無料プラン制限（LIFF 認証ユーザー）: 月30通・到着パターン最大3つ。
 
 ## トラブルシュート
 
@@ -84,14 +98,6 @@ ALTER TABLE notification_log ADD COLUMN message_mode TEXT;
 
 ---
 
-## 将来: 第三者向け（LIFF・課金）
+## 将来メモ
 
-公開を広げる段階で以下を追加します（個人利用では不要）。
-
-| 設定 | 用途 |
-|------|------|
-| `LIFF_ID` | `/liff` ミニアプリ |
-| `STRIPE_*` | プレミアム課金 |
-| `0003_multi_tenant.sql` | ユーザー別設定・グループ連携 |
-
-詳細はコード内 `src/liff-html.ts`, `src/tenant.ts` を参照。
+個人利用だけで十分な場合は `LINE_*` シークレットのみで運用できます。LIFF / Stripe は設定しなければ経路は休眠します。

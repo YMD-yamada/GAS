@@ -75,6 +75,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
 
     <p class="small fw-semibold text-secondary mb-2">プレビュー</p>
     <div class="preview-card rounded-3 p-3 mb-2" id="preview"></div>
+    <p class="text-center small mb-0"><a href="/about">このアプリについて</a> · <a href="/privacy">プライバシー</a></p>
   </div>
 
   <div class="send-bar">

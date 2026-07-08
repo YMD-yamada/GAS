@@ -42,18 +42,27 @@ export const ABOUT_HTML = `<!DOCTYPE html>
       <div class="col-md-4">
         <div class="card h-100 border-0 shadow-sm">
           <div class="card-body text-center">
-            <div class="feature-icon mb-2">💼</div>
-            <h2 class="h6 fw-bold">仕事終了予定の連絡</h2>
-            <p class="small text-muted mb-0">終了予定・到着目安・夕飯をまとめて伝えられます</p>
+            <div class="feature-icon mb-2">📢</div>
+            <h2 class="h6 fw-bold">題名で状態が分かる</h2>
+            <p class="small text-muted mb-0">そのまま帰る／残業／飲み会などを1行目で伝えます</p>
           </div>
         </div>
       </div>
       <div class="col-md-4">
         <div class="card h-100 border-0 shadow-sm">
           <div class="card-body text-center">
-            <div class="feature-icon mb-2">📌</div>
-            <h2 class="h6 fw-bold">備考・予定</h2>
-            <p class="small text-muted mb-0">残業・飲み会・寄り道などを選ぶか、予定を自由入力</p>
+            <div class="feature-icon mb-2">🕒</div>
+            <h2 class="h6 fw-bold">到着の目安</h2>
+            <p class="small text-muted mb-0">何時ごろ家に着くかをボタンで選べます</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="feature-icon mb-2">🍚</div>
+            <h2 class="h6 fw-bold">夕飯の連絡</h2>
+            <p class="small text-muted mb-0">家で食べる／食べて帰る／いらないをまとめて送信</p>
           </div>
         </div>
       </div>
@@ -64,8 +73,8 @@ export const ABOUT_HTML = `<!DOCTYPE html>
         <div class="card-body">
           <h2 class="h6 fw-bold">料金</h2>
           <ul class="small mb-3">
-            <li><strong>無料</strong> — 月30通まで、基本パターン3つ</li>
-            <li><strong>プレミアム（月390円）</strong> — 送信無制限・パターン無制限・ログ保存</li>
+            <li><strong>無料</strong> — 月30通まで、到着パターン3つまで</li>
+            <li><strong>プレミアム（月390円）</strong> — 送信無制限・パターン無制限・ログ保存・広告なし</li>
           </ul>
           <button type="button" class="btn btn-warning btn-sm" id="btnPremium">プレミアムに申し込む</button>
           <p class="small text-muted mt-2 mb-0" id="premiumHint">LINEでログイン後にお申し込みいただけます</p>
@@ -74,13 +83,17 @@ export const ABOUT_HTML = `<!DOCTYPE html>
     </div>
 
     <div class="col-lg-8 mx-auto mb-4 ad-slot" id="adSlot">
-      <!-- AdSense: 審査通過後に data-ad-client を設定 -->
+      <!-- AdSense: 審査通過後に script / data-ad-client を設定。無料ユーザー向け。送信画面には出さない -->
       広告枠（プレミアムユーザーには表示しません）
     </div>
 
+    <p class="text-center small text-muted mb-2">
+      初回は家族グループにボットを招待するだけ。技術的な設定は不要です。
+    </p>
     <p class="text-center small text-muted">
       <a href="/">アプリを開く</a> ·
-      <a href="/liff">LINEで開く</a>
+      <a href="/liff">LINEで開く</a> ·
+      <a href="/privacy">プライバシー・利用規約</a>
     </p>
   </div>
 

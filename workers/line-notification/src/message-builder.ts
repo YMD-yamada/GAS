@@ -51,6 +51,7 @@ export const PATTERN_PRESETS: Record<string, { label: string; patterns: { label:
 };
 
 export const FREE_MONTHLY_SEND_LIMIT = 30;
+export const FREE_PATTERN_LIMIT = 3;
 export const MAX_MESSAGE_LINES = 3;
 
 export function resolveMessageMode(hasSchedule: boolean): MessageMode {

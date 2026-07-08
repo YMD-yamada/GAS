@@ -46,6 +46,7 @@ export function buildLiffHtml(liffId: string): string {
             <li>「招待」→ このボット（公式アカウント）を選ぶ</li>
             <li>グループで何かメッセージを送ると自動で連携されます</li>
           </ol>
+          <p class="small text-muted mt-2 mb-0">グループではメンバー全員が通知を見られます。</p>
         </div>
       </div>
       <button type="button" class="btn btn-primary w-100" id="btnWizard1">招待した → 次へ</button>
@@ -53,7 +54,7 @@ export function buildLiffHtml(liffId: string): string {
     </div>
 
     <div class="wizard-step" id="step2">
-      <p class="small fw-semibold text-secondary mb-2">② 終了時間のパターンを選ぶ</p>
+      <p class="small fw-semibold text-secondary mb-2">② 到着時間のパターンを選ぶ</p>
       <div class="d-flex flex-wrap gap-2 mb-3">
         ${presetButtons}
       </div>
@@ -114,7 +115,7 @@ export function buildLiffHtml(liffId: string): string {
 
       <p class="small fw-semibold text-secondary mb-2">プレビュー</p>
       <div class="preview-card rounded-3 p-3 mb-2" id="preview"></div>
-      <p class="text-center small"><a href="/about">このアプリについて</a></p>
+      <p class="text-center small"><a href="/about">このアプリについて</a> · <a href="/privacy">プライバシー</a></p>
     </div>
 
     <div class="send-bar">
@@ -179,7 +180,10 @@ export function buildLiffHtml(liffId: string): string {
       document.getElementById('wizard').classList.add('d-none');
       document.getElementById('app').classList.remove('d-none');
       var plan = (userSettings && userSettings.user && userSettings.user.plan) || 'free';
-      document.getElementById('planBadge').textContent = plan === 'premium' ? 'プレミアム' : '無料プラン（月30通まで）';
+      document.getElementById('planBadge').textContent =
+        plan === 'premium'
+          ? 'プレミアム'
+          : '無料プラン（月30通・パターン3つまで）';
     }
 
     function renderPatterns() {
