@@ -64,63 +64,71 @@ export function buildLiffHtml(liffId: string): string {
   </div>
 
   <div id="app" class="d-none">
-    <div class="container py-3 px-3">
-      <h1 class="h5 text-center mb-1 fw-bold">おかえり連絡</h1>
-      <p class="text-center text-muted small mb-2">仕事終了予定・帰宅時間を家族にLINEで送る</p>
-      <p class="text-center small mb-3" id="planBadge"></p>
+    <div class="app-shell">
+      <h1 class="app-title">おかえり連絡</h1>
+      <p class="app-sub">家族に伝えるのは3つだけ<br />状態・到着・夕飯</p>
+      <p class="text-center small mb-2" id="planBadge"></p>
 
-      <p class="small fw-semibold text-secondary mb-2">何ごろ帰る？</p>
-      <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
-
-      <p class="small fw-semibold text-secondary mb-2">夕飯</p>
-      <div class="segment-wrap mb-3" role="group">
-        <input type="radio" name="dinner" id="d-home" value="home" checked />
-        <label for="d-home">家で食べる</label>
-        <input type="radio" name="dinner" id="d-eat" value="eatOut" />
-        <label for="d-eat">食べて帰る</label>
-        <input type="radio" name="dinner" id="d-none" value="none" />
-        <label for="d-none">いらない</label>
+      <div class="preview-wrap">
+        <p class="preview-caption">家族に届くメッセージ</p>
+        <div class="preview-bubble" id="preview"></div>
       </div>
 
-      <div id="situationWrap">
-        <p class="small fw-semibold text-secondary mb-2">題名（どんな感じ？）</p>
-        <select id="situationKey" class="form-select mb-3">
-          <option value="none">そのまま帰る</option>
-          <option value="overtime">残業しそう</option>
-          <option value="drinking">飲み会</option>
-          <option value="late">遅れそう</option>
-          <option value="errand">寄り道</option>
-        </select>
-      </div>
+      <section class="section" id="situationSection">
+        <p class="section-label"><span class="step-num">1</span>いまの状態</p>
+        <div class="chip-grid five" role="group">
+          <button type="button" class="chip wide active" data-situation="none">そのまま帰る</button>
+          <button type="button" class="chip" data-situation="overtime">残業しそう</button>
+          <button type="button" class="chip" data-situation="late">遅れそう</button>
+          <button type="button" class="chip" data-situation="drinking">飲み会</button>
+          <button type="button" class="chip" data-situation="errand">寄り道</button>
+        </div>
+      </section>
 
-      <p class="small fw-semibold text-secondary mb-2">予定</p>
-      <div class="segment-wrap mb-3" role="group">
-        <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
-        <label for="s-none">予定なし</label>
-        <input type="radio" name="scheduleMode" id="s-has" value="has" />
-        <label for="s-has">予定あり</label>
-      </div>
+      <section class="section" id="arrivalSection">
+        <p class="section-label"><span class="step-num">2</span>家に着く時間</p>
+        <div class="chip-grid" id="patternGroup" role="group"></div>
+      </section>
 
-      <div id="scheduleFields" class="border rounded-3 p-3 mb-3 d-none bg-white">
-        <label for="scheduleTime" class="form-label small fw-semibold mb-1">予想帰宅時間</label>
-        <select id="scheduleTime" class="form-select mb-2">
-          <option value="">選択してください</option>
-          <option value="19:00">19:00</option><option value="20:00">20:00</option>
-          <option value="21:00">21:00</option><option value="22:00">22:00</option>
-          <option value="23:00">23:00</option>
-        </select>
-        <label for="scheduleDetail" class="form-label small fw-semibold mb-1">予定の内容</label>
-        <input id="scheduleDetail" type="text" maxlength="60" class="form-control" placeholder="例：買い物" />
-      </div>
+      <section class="section">
+        <p class="section-label"><span class="step-num">3</span>夕飯どうする？</p>
+        <div class="segment-wrap" role="group">
+          <input type="radio" name="dinner" id="d-home" value="home" checked />
+          <label for="d-home">家で食べる</label>
+          <input type="radio" name="dinner" id="d-eat" value="eatOut" />
+          <label for="d-eat">食べて帰る</label>
+          <input type="radio" name="dinner" id="d-none" value="none" />
+          <label for="d-none">いらない</label>
+        </div>
+      </section>
 
-      <p class="small fw-semibold text-secondary mb-2">プレビュー</p>
-      <div class="preview-card rounded-3 p-3 mb-2" id="preview"></div>
-      <p class="text-center small"><a href="/about">このアプリについて</a> · <a href="/privacy">プライバシー</a></p>
+      <section class="section">
+        <p class="section-label">用事・予定がある？</p>
+        <div class="segment-wrap" role="group">
+          <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
+          <label for="s-none">なし</label>
+          <input type="radio" name="scheduleMode" id="s-has" value="has" />
+          <label for="s-has">あり</label>
+        </div>
+        <div id="scheduleFields" class="schedule-panel d-none">
+          <label for="scheduleDetail" class="field-label">何の予定？</label>
+          <input id="scheduleDetail" type="text" maxlength="60" class="form-control mb-2" placeholder="例：買い物" />
+          <label for="scheduleTime" class="field-label">そのあと、何時ごろ着く？</label>
+          <select id="scheduleTime" class="form-select">
+            <option value="">選んでください</option>
+            <option value="19:00">19:00</option><option value="20:00">20:00</option>
+            <option value="21:00">21:00</option><option value="22:00">22:00</option>
+            <option value="23:00">23:00</option>
+          </select>
+        </div>
+      </section>
+
+      <p class="footer-links"><a href="/about">このアプリについて</a> · <a href="/privacy">プライバシー</a></p>
     </div>
 
     <div class="send-bar">
-      <div class="container px-3">
-        <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">LINEに送る</button>
+      <div class="app-shell" style="padding-top:0;padding-bottom:0">
+        <button type="button" class="btn btn-send w-100" id="btnSend">LINEに送る</button>
       </div>
     </div>
   </div>
@@ -150,13 +158,15 @@ export function buildLiffHtml(liffId: string): string {
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
-    var situationWrap = document.getElementById('situationWrap');
-    var situationKey = document.getElementById('situationKey');
+    var situationSection = document.getElementById('situationSection');
+    var arrivalSection = document.getElementById('arrivalSection');
+    var situationChips = document.querySelectorAll('[data-situation]');
+    var selectedSituation = 'none';
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
     var toastEl = document.getElementById('toast');
     var toastBody = document.getElementById('toastBody');
-    var toast = new bootstrap.Toast(toastEl, { delay: 2500 });
+    var toast = new bootstrap.Toast(toastEl, { delay: 2200 });
     var DINNER_TEXT = { home: '家で食べます', eatOut: '食べて帰ります', none: 'いりません' };
 
     function showToast(msg, ok) {
@@ -191,8 +201,8 @@ export function buildLiffHtml(liffId: string): string {
       patterns.forEach(function (p, i) {
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'btn pattern-btn';
-        btn.innerHTML = '到着 ' + p.arrival;
+        btn.className = 'chip';
+        btn.textContent = p.arrival;
         btn.addEventListener('click', function () { setPattern(i); });
         patternGroup.appendChild(btn);
       });
@@ -200,15 +210,20 @@ export function buildLiffHtml(liffId: string): string {
 
     function setPattern(i) {
       selectedIndex = i;
-      patternGroup.querySelectorAll('.pattern-btn').forEach(function (btn, idx) {
+      patternGroup.querySelectorAll('.chip').forEach(function (btn, idx) {
         btn.classList.toggle('active', idx === i);
       });
       updatePreview();
     }
 
-    function getSituationKey() {
-      return situationKey ? situationKey.value : 'none';
+    function setSituation(key) {
+      selectedSituation = key || 'none';
+      situationChips.forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-situation') === selectedSituation);
+      });
+      updatePreview();
     }
+
     function getDinnerKey() {
       var r = document.querySelector('input[name="dinner"]:checked');
       return r ? r.value : 'home';
@@ -217,20 +232,18 @@ export function buildLiffHtml(liffId: string): string {
       var r = document.querySelector('input[name="scheduleMode"]:checked');
       return !!r && r.value === 'has';
     }
-    function effectiveMessageMode() {
-      return resolveMessageMode(hasSchedule());
-    }
 
     function updateScheduleFields() {
       var show = hasSchedule();
       scheduleFields.classList.toggle('d-none', !show);
-      situationWrap.classList.toggle('d-none', show);
-      if (show && situationKey) situationKey.value = 'none';
+      situationSection.classList.toggle('d-none', show);
+      arrivalSection.classList.toggle('d-none', show);
+      if (show) setSituation('none');
       updatePreview();
     }
 
     function updatePreview() {
-      var mode = effectiveMessageMode();
+      var mode = resolveMessageMode(hasSchedule());
       var p = patterns[selectedIndex] || { label: '', arrival: '' };
       preview.textContent = buildMessageText({
         messageMode: mode,
@@ -238,7 +251,7 @@ export function buildLiffHtml(liffId: string): string {
         dinnerLine: DINNER_TEXT[getDinnerKey()],
         scheduleTime: scheduleTime.value || '（未選択）',
         scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
-        situationKey: getSituationKey()
+        situationKey: selectedSituation
       });
       btnSend.textContent = getSendButtonLabel();
     }
@@ -323,12 +336,14 @@ export function buildLiffHtml(liffId: string): string {
       finishOnboarding();
     });
 
+    situationChips.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setSituation(btn.getAttribute('data-situation'));
+      });
+    });
     document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
       el.addEventListener('change', updatePreview);
     });
-    if (situationKey) {
-      situationKey.addEventListener('change', updatePreview);
-    }
     document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
       el.addEventListener('change', updateScheduleFields);
     });
@@ -338,8 +353,8 @@ export function buildLiffHtml(liffId: string): string {
     btnSend.addEventListener('click', function () {
       if (btnSend.disabled) return;
       if (hasSchedule()) {
-        if (!scheduleTime.value) { showToast('予想帰宅時間を選択してください', false); return; }
         if (!scheduleDetail.value.trim()) { showToast('予定の内容を入力してください', false); return; }
+        if (!scheduleTime.value) { showToast('到着時間を選んでください', false); return; }
       }
       btnSend.disabled = true;
       var prev = btnSend.textContent;
@@ -353,14 +368,14 @@ export function buildLiffHtml(liffId: string): string {
           hasSchedule: hasSchedule(),
           scheduleTime: scheduleTime.value,
           scheduleDetail: scheduleDetail.value.trim(),
-          situationKey: getSituationKey()
+          situationKey: selectedSituation
         })
       })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (out) {
           btnSend.disabled = false;
           btnSend.textContent = prev;
-          if (out.ok && out.data.ok) showToast('送信しました', true);
+          if (out.ok && out.data.ok) showToast('送りました', true);
           else showToast((out.data && out.data.error) || '送信失敗', false);
         })
         .catch(function (err) {

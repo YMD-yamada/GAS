@@ -7,80 +7,101 @@ export const PAGE_HTML = `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#198754" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="/manifest.json" />
   <title>おかえり連絡</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>${UI_STYLES}</style>
 </head>
 <body>
-  <div class="container py-3 px-3">
-    <h1 class="h5 text-center mb-1 fw-bold">おかえり連絡</h1>
-    <p class="text-center text-muted small mb-3">仕事終了予定・帰宅時間を家族にLINEで送る</p>
+  <div class="app-shell">
+    <h1 class="app-title">おかえり連絡</h1>
+    <p class="app-sub">家族に伝えるのは3つだけ<br />状態・到着・夕飯</p>
 
-    <p class="small fw-semibold text-secondary mb-2">何ごろ帰る？</p>
-    <div class="d-grid gap-2 mb-4" id="patternGroup"></div>
-
-    <p class="small fw-semibold text-secondary mb-2">夕飯</p>
-    <div class="segment-wrap mb-3" role="group" aria-label="夕飯">
-      <input type="radio" name="dinner" id="d-home" value="home" checked />
-      <label for="d-home">家で食べる</label>
-      <input type="radio" name="dinner" id="d-eat" value="eatOut" />
-      <label for="d-eat">食べて帰る</label>
-      <input type="radio" name="dinner" id="d-none" value="none" />
-      <label for="d-none">いらない</label>
+    <div class="preview-wrap">
+      <p class="preview-caption">家族に届くメッセージ</p>
+      <div class="preview-bubble" id="preview" aria-live="polite"></div>
     </div>
 
-    <div id="situationWrap">
-      <p class="small fw-semibold text-secondary mb-2">題名（どんな感じ？）</p>
-      <select id="situationKey" class="form-select mb-3" aria-label="題名">
-        <option value="none">そのまま帰る</option>
-        <option value="overtime">残業しそう</option>
-        <option value="drinking">飲み会</option>
-        <option value="late">遅れそう</option>
-        <option value="errand">寄り道</option>
-      </select>
-    </div>
+    <section class="section" id="situationSection" aria-labelledby="sitLabel">
+      <p class="section-label" id="sitLabel"><span class="step-num">1</span>いまの状態</p>
+      <p class="section-hint">メッセージの1行目（題名）になります</p>
+      <div class="chip-grid five" role="group" aria-label="いまの状態">
+        <button type="button" class="chip wide active" data-situation="none">そのまま帰る</button>
+        <button type="button" class="chip" data-situation="overtime">残業しそう</button>
+        <button type="button" class="chip" data-situation="late">遅れそう</button>
+        <button type="button" class="chip" data-situation="drinking">飲み会</button>
+        <button type="button" class="chip" data-situation="errand">寄り道</button>
+      </div>
+    </section>
 
-    <p class="small fw-semibold text-secondary mb-2">予定</p>
-    <div class="segment-wrap mb-3" role="group" aria-label="予定ありなし">
-      <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
-      <label for="s-none">予定なし</label>
-      <input type="radio" name="scheduleMode" id="s-has" value="has" />
-      <label for="s-has">予定あり</label>
-    </div>
+    <section class="section" id="arrivalSection" aria-labelledby="arrLabel">
+      <p class="section-label" id="arrLabel"><span class="step-num">2</span>家に着く時間</p>
+      <p class="section-hint">メッセージの2行目になります</p>
+      <div class="chip-grid" id="patternGroup" role="group" aria-label="到着時間"></div>
+    </section>
 
-    <div id="scheduleFields" class="border rounded-3 p-3 mb-3 d-none bg-white">
-      <label for="scheduleTime" class="form-label small fw-semibold mb-1">予想帰宅時間</label>
-      <select id="scheduleTime" class="form-select mb-2">
-        <option value="">選択してください</option>
-        <option value="19:00">19:00</option>
-        <option value="19:30">19:30</option>
-        <option value="20:00">20:00</option>
-        <option value="20:30">20:30</option>
-        <option value="21:00">21:00</option>
-        <option value="21:30">21:30</option>
-        <option value="22:00">22:00</option>
-        <option value="22:30">22:30</option>
-        <option value="23:00">23:00</option>
-        <option value="23:30">23:30</option>
-        <option value="翌日 00:00">翌日 00:00</option>
-        <option value="翌日 00:30">翌日 00:30</option>
-        <option value="翌日 01:00">翌日 01:00</option>
-      </select>
-      <label for="scheduleDetail" class="form-label small fw-semibold mb-1">予定の内容</label>
-      <input id="scheduleDetail" type="text" maxlength="60" class="form-control" placeholder="例：買い物、病院" />
-    </div>
+    <section class="section" aria-labelledby="dinLabel">
+      <p class="section-label" id="dinLabel"><span class="step-num">3</span>夕飯どうする？</p>
+      <p class="section-hint">メッセージの3行目になります</p>
+      <div class="segment-wrap" role="group" aria-label="夕飯">
+        <input type="radio" name="dinner" id="d-home" value="home" checked />
+        <label for="d-home">家で食べる</label>
+        <input type="radio" name="dinner" id="d-eat" value="eatOut" />
+        <label for="d-eat">食べて帰る</label>
+        <input type="radio" name="dinner" id="d-none" value="none" />
+        <label for="d-none">いらない</label>
+      </div>
+    </section>
 
-    <p class="small fw-semibold text-secondary mb-2">プレビュー</p>
-    <div class="preview-card rounded-3 p-3 mb-2" id="preview"></div>
-    <p class="text-center small mb-0"><a href="/about">このアプリについて</a> · <a href="/privacy">プライバシー</a></p>
+    <section class="section" aria-labelledby="schLabel">
+      <p class="section-label" id="schLabel">用事・予定がある？</p>
+      <p class="section-hint">買い物・病院など。選ぶと題名が「予定：」になります</p>
+      <div class="segment-wrap" role="group" aria-label="予定の有無">
+        <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
+        <label for="s-none">なし</label>
+        <input type="radio" name="scheduleMode" id="s-has" value="has" />
+        <label for="s-has">あり</label>
+      </div>
+
+      <div id="scheduleFields" class="schedule-panel d-none">
+        <label for="scheduleDetail" class="field-label">何の予定？</label>
+        <input
+          id="scheduleDetail"
+          type="text"
+          maxlength="60"
+          class="form-control mb-2"
+          placeholder="例：買い物、病院、美容院"
+          autocomplete="off"
+        />
+        <label for="scheduleTime" class="field-label">そのあと、何時ごろ着く？</label>
+        <select id="scheduleTime" class="form-select">
+          <option value="">選んでください</option>
+          <option value="19:00">19:00</option>
+          <option value="19:30">19:30</option>
+          <option value="20:00">20:00</option>
+          <option value="20:30">20:30</option>
+          <option value="21:00">21:00</option>
+          <option value="21:30">21:30</option>
+          <option value="22:00">22:00</option>
+          <option value="22:30">22:30</option>
+          <option value="23:00">23:00</option>
+          <option value="23:30">23:30</option>
+          <option value="翌日 00:00">翌日 00:00</option>
+          <option value="翌日 00:30">翌日 00:30</option>
+          <option value="翌日 01:00">翌日 01:00</option>
+        </select>
+      </div>
+    </section>
+
+    <p class="footer-links"><a href="/about">このアプリについて</a> · <a href="/privacy">プライバシー</a></p>
   </div>
 
   <div class="send-bar">
-    <div class="container px-3">
-      <button type="button" class="btn btn-send w-100 rounded-3 shadow-sm" id="btnSend">LINEに送る</button>
+    <div class="app-shell" style="padding-top:0;padding-bottom:0">
+      <button type="button" class="btn btn-send w-100" id="btnSend">LINEに送る</button>
     </div>
   </div>
 
@@ -97,21 +118,23 @@ export const PAGE_HTML = `<!DOCTYPE html>
   <script>
     ${CLIENT_SCRIPT}
 
-    var STORAGE_KEY = 'okaeri_prefs_v2';
+    var STORAGE_KEY = 'okaeri_prefs_v3';
     var DINNER_TEXT = { home: '家で食べます', eatOut: '食べて帰ります', none: 'いりません' };
     var patterns = [];
     var selectedIndex = 0;
+    var selectedSituation = 'none';
     var patternGroup = document.getElementById('patternGroup');
+    var situationSection = document.getElementById('situationSection');
+    var arrivalSection = document.getElementById('arrivalSection');
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
-    var situationWrap = document.getElementById('situationWrap');
-    var situationKey = document.getElementById('situationKey');
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
+    var situationChips = document.querySelectorAll('[data-situation]');
     var toastEl = document.getElementById('toast');
     var toastBody = document.getElementById('toastBody');
-    var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 2500 }) : null;
+    var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 2200 }) : null;
 
     function showToast(msg, ok) {
       if (!toast) { alert(msg); return; }
@@ -127,7 +150,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
       if (h < 18) return 1;
       if (h < 19) return 2;
       if (h < 20) return 3;
-      return Math.min(4, patterns.length - 1);
+      return Math.min(4, Math.max(0, patterns.length - 1));
     }
 
     function renderPatterns() {
@@ -135,9 +158,9 @@ export const PAGE_HTML = `<!DOCTYPE html>
       patterns.forEach(function (p, i) {
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'btn pattern-btn';
+        btn.className = 'chip';
         btn.setAttribute('data-index', String(i));
-        btn.innerHTML = '到着 ' + p.arrival;
+        btn.textContent = p.arrival;
         btn.addEventListener('click', function () { setPattern(i); });
         patternGroup.appendChild(btn);
       });
@@ -145,17 +168,23 @@ export const PAGE_HTML = `<!DOCTYPE html>
 
     function setPattern(index) {
       selectedIndex = index;
-      patternGroup.querySelectorAll('.pattern-btn').forEach(function (btn, i) {
-        var on = i === index;
-        btn.classList.toggle('active', on);
-        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      patternGroup.querySelectorAll('.chip').forEach(function (btn, i) {
+        btn.classList.toggle('active', i === index);
+        btn.setAttribute('aria-pressed', i === index ? 'true' : 'false');
       });
       savePrefs();
       updatePreview();
     }
 
-    function getSituationKey() {
-      return situationKey ? situationKey.value : 'none';
+    function setSituation(key) {
+      selectedSituation = key || 'none';
+      situationChips.forEach(function (btn) {
+        var on = btn.getAttribute('data-situation') === selectedSituation;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      savePrefs();
+      updatePreview();
     }
 
     function getDinnerKey() {
@@ -168,21 +197,21 @@ export const PAGE_HTML = `<!DOCTYPE html>
       return !!r && r.value === 'has';
     }
 
-    function effectiveMessageMode() {
-      return resolveMessageMode(hasSchedule());
-    }
-
     function updateScheduleFields() {
       var show = hasSchedule();
       scheduleFields.classList.toggle('d-none', !show);
-      situationWrap.classList.toggle('d-none', show);
-      if (show && situationKey) situationKey.value = 'none';
+      situationSection.classList.toggle('d-none', show);
+      arrivalSection.classList.toggle('d-none', show);
+      if (show) {
+        selectedSituation = 'none';
+        setSituation('none');
+      }
       savePrefs();
       updatePreview();
     }
 
     function updatePreview() {
-      var mode = effectiveMessageMode();
+      var mode = resolveMessageMode(hasSchedule());
       var p = patterns[selectedIndex] || { label: '', arrival: '' };
       var text = buildMessageText({
         messageMode: mode,
@@ -190,9 +219,10 @@ export const PAGE_HTML = `<!DOCTYPE html>
         dinnerLine: DINNER_TEXT[getDinnerKey()],
         scheduleTime: scheduleTime.value || '（未選択）',
         scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
-        situationKey: getSituationKey()
+        situationKey: selectedSituation
       });
       preview.textContent = text;
+      preview.classList.toggle('empty', !text);
       btnSend.textContent = getSendButtonLabel();
     }
 
@@ -201,7 +231,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           patternIndex: selectedIndex,
           dinnerKey: getDinnerKey(),
-          situationKey: getSituationKey(),
+          situationKey: selectedSituation,
           scheduleMode: hasSchedule() ? 'has' : 'none',
           scheduleTime: scheduleTime.value,
           scheduleDetail: scheduleDetail.value
@@ -218,9 +248,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
           var d = document.querySelector('input[name="dinner"][value="' + p.dinnerKey + '"]');
           if (d) d.checked = true;
         }
-        if (p.situationKey && situationKey) {
-          situationKey.value = p.situationKey;
-        }
+        if (p.situationKey) selectedSituation = p.situationKey;
         if (p.scheduleMode === 'has') {
           document.getElementById('s-has').checked = true;
         }
@@ -232,55 +260,57 @@ export const PAGE_HTML = `<!DOCTYPE html>
       } catch (e) {}
     }
 
+    situationChips.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setSituation(btn.getAttribute('data-situation'));
+      });
+    });
+
     document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
       el.addEventListener('change', function () { savePrefs(); updatePreview(); });
     });
-    if (situationKey) {
-      situationKey.addEventListener('change', function () { savePrefs(); updatePreview(); });
-    }
     document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
       el.addEventListener('change', updateScheduleFields);
     });
     scheduleTime.addEventListener('change', function () { savePrefs(); updatePreview(); });
     scheduleDetail.addEventListener('input', function () { savePrefs(); updatePreview(); });
 
+    var fallbackPatterns = [
+      { label: '17時半終了', arrival: '19:00前' },
+      { label: '18時前終了', arrival: '19:00すぎ' },
+      { label: '18時半終了', arrival: '20:00前' },
+      { label: '19時半終了', arrival: '21:00前' },
+      { label: '20時半終了', arrival: '22:00前' }
+    ];
+
+    function boot(list) {
+      patterns = list && list.length ? list : fallbackPatterns;
+      renderPatterns();
+      loadPrefs();
+      setSituation(selectedSituation);
+      if (!localStorage.getItem(STORAGE_KEY)) setPattern(defaultPatternIndex());
+      else setPattern(selectedIndex);
+      updateScheduleFields();
+    }
+
     fetch('/api/patterns')
       .then(function (r) { return r.json(); })
-      .then(function (data) {
-        patterns = (data && data.patterns) || [];
-        if (!patterns.length) {
-          patterns = [
-            { label: '17時半終了', arrival: '19:00前' },
-            { label: '18時前終了', arrival: '19:00すぎ' },
-            { label: '18時半終了', arrival: '20:00前' },
-            { label: '19時半終了', arrival: '21:00前' },
-            { label: '20時半終了', arrival: '22:00前' }
-          ];
-        }
-        renderPatterns();
-        loadPrefs();
-        if (!localStorage.getItem(STORAGE_KEY)) setPattern(defaultPatternIndex());
-        else setPattern(selectedIndex);
-        updateScheduleFields();
-      })
-      .catch(function () {
-        patterns = [
-          { label: '17時半終了', arrival: '19:00前' },
-          { label: '18時前終了', arrival: '19:00すぎ' },
-          { label: '18時半終了', arrival: '20:00前' },
-          { label: '19時半終了', arrival: '21:00前' },
-          { label: '20時半終了', arrival: '22:00前' }
-        ];
-        renderPatterns();
-        setPattern(defaultPatternIndex());
-        updateScheduleFields();
-      });
+      .then(function (data) { boot((data && data.patterns) || []); })
+      .catch(function () { boot(fallbackPatterns); });
 
     btnSend.addEventListener('click', function () {
       if (btnSend.disabled) return;
       if (hasSchedule()) {
-        if (!scheduleTime.value) { showToast('予想帰宅時間を選択してください', false); return; }
-        if (!scheduleDetail.value.trim()) { showToast('予定の内容を入力してください', false); return; }
+        if (!(scheduleDetail.value || '').trim()) {
+          showToast('予定の内容を入力してください', false);
+          scheduleDetail.focus();
+          return;
+        }
+        if (!scheduleTime.value) {
+          showToast('到着時間を選んでください', false);
+          scheduleTime.focus();
+          return;
+        }
       }
       btnSend.disabled = true;
       var prevLabel = btnSend.textContent;
@@ -295,7 +325,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
           hasSchedule: hasSchedule(),
           scheduleTime: scheduleTime.value,
           scheduleDetail: scheduleDetail.value.trim(),
-          situationKey: getSituationKey()
+          situationKey: selectedSituation
         })
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
@@ -303,7 +333,7 @@ export const PAGE_HTML = `<!DOCTYPE html>
           btnSend.disabled = false;
           btnSend.textContent = prevLabel;
           if (out.ok && out.data && out.data.ok) {
-            showToast('送信しました', true);
+            showToast('送りました', true);
             savePrefs();
           } else {
             showToast((out.data && out.data.error) || '送信に失敗しました', false);
