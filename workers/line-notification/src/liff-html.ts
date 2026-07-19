@@ -76,22 +76,31 @@ export function buildLiffHtml(liffId: string): string {
 
       <section class="section" id="situationSection">
         <p class="section-label"><span class="step-num">1</span>いまの状態</p>
+        <p class="section-hint">メッセージの1行目（題名）になります</p>
         <div class="chip-grid five" role="group">
-          <button type="button" class="chip wide active" data-situation="none">そのまま帰る</button>
-          <button type="button" class="chip" data-situation="overtime">残業しそう</button>
-          <button type="button" class="chip" data-situation="late">遅れそう</button>
-          <button type="button" class="chip" data-situation="drinking">飲み会</button>
-          <button type="button" class="chip" data-situation="errand">寄り道</button>
+          <button type="button" class="chip wide active" data-mode="none">そのまま帰る</button>
+          <button type="button" class="chip" data-mode="overtime">残業しそう</button>
+          <button type="button" class="chip" data-mode="late">遅れそう</button>
+          <button type="button" class="chip" data-mode="drinking">飲み会</button>
+          <button type="button" class="chip" data-mode="errand">寄り道</button>
+          <button type="button" class="chip wide" data-mode="schedule">予定あり（買い物など）</button>
+        </div>
+        <div id="scheduleFields" class="inline-panel d-none" style="margin-top:0.75rem;padding:0.85rem 0.75rem;border-radius:0.85rem;background:#f0f7ff;border:1.5px solid #bfdbfe">
+          <label for="scheduleDetail" class="field-label">何の予定？</label>
+          <input id="scheduleDetail" type="text" maxlength="60" class="form-control" placeholder="例：買い物、病院" />
+          <p class="field-label" style="margin-top:0.55rem">何時ごろ着く？</p>
+          <div class="chip-grid" id="scheduleTimeGroup" role="group"></div>
+          <input type="hidden" id="scheduleTime" value="" />
         </div>
       </section>
 
       <section class="section" id="arrivalSection">
-        <p class="section-label"><span class="step-num">2</span>家に着く時間</p>
+        <p class="section-label"><span class="step-num" id="arrStep">2</span>家に着く時間</p>
         <div class="chip-grid" id="patternGroup" role="group"></div>
       </section>
 
       <section class="section">
-        <p class="section-label"><span class="step-num">3</span>夕飯どうする？</p>
+        <p class="section-label"><span class="step-num" id="dinStep">3</span>夕飯どうする？</p>
         <div class="segment-wrap" role="group">
           <input type="radio" name="dinner" id="d-home" value="home" checked />
           <label for="d-home">家で食べる</label>
@@ -99,27 +108,6 @@ export function buildLiffHtml(liffId: string): string {
           <label for="d-eat">食べて帰る</label>
           <input type="radio" name="dinner" id="d-none" value="none" />
           <label for="d-none">いらない</label>
-        </div>
-      </section>
-
-      <section class="section">
-        <p class="section-label">用事・予定がある？</p>
-        <div class="segment-wrap" role="group">
-          <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
-          <label for="s-none">なし</label>
-          <input type="radio" name="scheduleMode" id="s-has" value="has" />
-          <label for="s-has">あり</label>
-        </div>
-        <div id="scheduleFields" class="schedule-panel d-none">
-          <label for="scheduleDetail" class="field-label">何の予定？</label>
-          <input id="scheduleDetail" type="text" maxlength="60" class="form-control mb-2" placeholder="例：買い物" />
-          <label for="scheduleTime" class="field-label">そのあと、何時ごろ着く？</label>
-          <select id="scheduleTime" class="form-select">
-            <option value="">選んでください</option>
-            <option value="19:00">19:00</option><option value="20:00">20:00</option>
-            <option value="21:00">21:00</option><option value="22:00">22:00</option>
-            <option value="23:00">23:00</option>
-          </select>
         </div>
       </section>
 
@@ -154,14 +142,18 @@ export function buildLiffHtml(liffId: string): string {
     var selectedIndex = 0;
     var selectedPreset = 'regular';
 
+    var SCHEDULE_TIMES = ['19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00','23:30','翌日 00:00','翌日 00:30','翌日 01:00'];
     var patternGroup = document.getElementById('patternGroup');
+    var scheduleTimeGroup = document.getElementById('scheduleTimeGroup');
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
-    var situationSection = document.getElementById('situationSection');
     var arrivalSection = document.getElementById('arrivalSection');
-    var situationChips = document.querySelectorAll('[data-situation]');
-    var selectedSituation = 'none';
+    var arrStep = document.getElementById('arrStep');
+    var dinStep = document.getElementById('dinStep');
+    var modeChips = document.querySelectorAll('[data-mode]');
+    var selectedMode = 'none';
+    var selectedScheduleTime = '';
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
     var toastEl = document.getElementById('toast');
@@ -196,6 +188,9 @@ export function buildLiffHtml(liffId: string): string {
           : '無料プラン（月30通・パターン3つまで）';
     }
 
+    function hasSchedule() { return selectedMode === 'schedule'; }
+    function situationKeyForApi() { return hasSchedule() ? 'none' : selectedMode; }
+
     function renderPatterns() {
       patternGroup.innerHTML = '';
       patterns.forEach(function (p, i) {
@@ -208,6 +203,19 @@ export function buildLiffHtml(liffId: string): string {
       });
     }
 
+    function renderScheduleTimes() {
+      scheduleTimeGroup.innerHTML = '';
+      SCHEDULE_TIMES.forEach(function (t) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chip';
+        btn.setAttribute('data-time', t);
+        btn.textContent = t;
+        btn.addEventListener('click', function () { setScheduleTime(t); });
+        scheduleTimeGroup.appendChild(btn);
+      });
+    }
+
     function setPattern(i) {
       selectedIndex = i;
       patternGroup.querySelectorAll('.chip').forEach(function (btn, idx) {
@@ -216,30 +224,41 @@ export function buildLiffHtml(liffId: string): string {
       updatePreview();
     }
 
-    function setSituation(key) {
-      selectedSituation = key || 'none';
-      situationChips.forEach(function (btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-situation') === selectedSituation);
+    function setScheduleTime(t) {
+      selectedScheduleTime = t || '';
+      scheduleTime.value = selectedScheduleTime;
+      scheduleTimeGroup.querySelectorAll('.chip').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-time') === selectedScheduleTime);
       });
       updatePreview();
+    }
+
+    function setMode(mode) {
+      selectedMode = mode || 'none';
+      modeChips.forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-mode') === selectedMode);
+      });
+      syncLayout();
+      if (hasSchedule() && !selectedScheduleTime) {
+        var h = new Date().getHours();
+        setScheduleTime(h < 20 ? '21:00' : h < 22 ? '23:00' : '翌日 00:00');
+        setTimeout(function () { scheduleDetail.focus(); }, 50);
+      } else {
+        updatePreview();
+      }
+    }
+
+    function syncLayout() {
+      var show = hasSchedule();
+      scheduleFields.classList.toggle('d-none', !show);
+      arrivalSection.classList.toggle('d-none', show);
+      if (arrStep) arrStep.textContent = '2';
+      if (dinStep) dinStep.textContent = show ? '2' : '3';
     }
 
     function getDinnerKey() {
       var r = document.querySelector('input[name="dinner"]:checked');
       return r ? r.value : 'home';
-    }
-    function hasSchedule() {
-      var r = document.querySelector('input[name="scheduleMode"]:checked');
-      return !!r && r.value === 'has';
-    }
-
-    function updateScheduleFields() {
-      var show = hasSchedule();
-      scheduleFields.classList.toggle('d-none', !show);
-      situationSection.classList.toggle('d-none', show);
-      arrivalSection.classList.toggle('d-none', show);
-      if (show) setSituation('none');
-      updatePreview();
     }
 
     function updatePreview() {
@@ -249,9 +268,9 @@ export function buildLiffHtml(liffId: string): string {
         messageMode: mode,
         arrival: p.arrival,
         dinnerLine: DINNER_TEXT[getDinnerKey()],
-        scheduleTime: scheduleTime.value || '（未選択）',
+        scheduleTime: selectedScheduleTime || '（未選択）',
         scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
-        situationKey: selectedSituation
+        situationKey: situationKeyForApi()
       });
       btnSend.textContent = getSendButtonLabel();
     }
@@ -259,8 +278,9 @@ export function buildLiffHtml(liffId: string): string {
     function loadPatternsFromSettings() {
       patterns = (userSettings && userSettings.patterns) || [];
       renderPatterns();
+      renderScheduleTimes();
       setPattern(0);
-      updateScheduleFields();
+      setMode(selectedMode);
     }
 
     function initLiff() {
@@ -336,25 +356,21 @@ export function buildLiffHtml(liffId: string): string {
       finishOnboarding();
     });
 
-    situationChips.forEach(function (btn) {
+    modeChips.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        setSituation(btn.getAttribute('data-situation'));
+        setMode(btn.getAttribute('data-mode'));
       });
     });
     document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
       el.addEventListener('change', updatePreview);
     });
-    document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
-      el.addEventListener('change', updateScheduleFields);
-    });
-    scheduleTime.addEventListener('change', updatePreview);
     scheduleDetail.addEventListener('input', updatePreview);
 
     btnSend.addEventListener('click', function () {
       if (btnSend.disabled) return;
       if (hasSchedule()) {
         if (!scheduleDetail.value.trim()) { showToast('予定の内容を入力してください', false); return; }
-        if (!scheduleTime.value) { showToast('到着時間を選んでください', false); return; }
+        if (!selectedScheduleTime) { showToast('到着時間を選んでください', false); return; }
       }
       btnSend.disabled = true;
       var prev = btnSend.textContent;
@@ -366,9 +382,9 @@ export function buildLiffHtml(liffId: string): string {
           patternIndex: selectedIndex,
           dinnerKey: getDinnerKey(),
           hasSchedule: hasSchedule(),
-          scheduleTime: scheduleTime.value,
+          scheduleTime: selectedScheduleTime,
           scheduleDetail: scheduleDetail.value.trim(),
-          situationKey: selectedSituation
+          situationKey: situationKeyForApi()
         })
       })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })

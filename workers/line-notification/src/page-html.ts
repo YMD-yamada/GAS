@@ -3,6 +3,11 @@ import { UI_STYLES } from './ui-styles';
 
 const CLIENT_SCRIPT = getMessageBuilderClientScript();
 
+const SCHEDULE_TIMES = [
+  '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
+  '22:00', '22:30', '23:00', '23:30', '翌日 00:00', '翌日 00:30', '翌日 01:00'
+];
+
 export const PAGE_HTML = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -13,7 +18,17 @@ export const PAGE_HTML = `<!DOCTYPE html>
   <link rel="manifest" href="/manifest.json" />
   <title>おかえり連絡</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <style>${UI_STYLES}</style>
+  <style>${UI_STYLES}
+    .inline-panel {
+      margin-top: 0.75rem;
+      padding: 0.85rem 0.75rem;
+      border-radius: 0.85rem;
+      background: #f0f7ff;
+      border: 1.5px solid #bfdbfe;
+    }
+    .inline-panel .field-label { margin-top: 0.55rem; }
+    .inline-panel .field-label:first-child { margin-top: 0; }
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -29,23 +44,40 @@ export const PAGE_HTML = `<!DOCTYPE html>
       <p class="section-label" id="sitLabel"><span class="step-num">1</span>いまの状態</p>
       <p class="section-hint">メッセージの1行目（題名）になります</p>
       <div class="chip-grid five" role="group" aria-label="いまの状態">
-        <button type="button" class="chip wide active" data-situation="none">そのまま帰る</button>
-        <button type="button" class="chip" data-situation="overtime">残業しそう</button>
-        <button type="button" class="chip" data-situation="late">遅れそう</button>
-        <button type="button" class="chip" data-situation="drinking">飲み会</button>
-        <button type="button" class="chip" data-situation="errand">寄り道</button>
+        <button type="button" class="chip wide active" data-mode="none">そのまま帰る</button>
+        <button type="button" class="chip" data-mode="overtime">残業しそう</button>
+        <button type="button" class="chip" data-mode="late">遅れそう</button>
+        <button type="button" class="chip" data-mode="drinking">飲み会</button>
+        <button type="button" class="chip" data-mode="errand">寄り道</button>
+        <button type="button" class="chip wide" data-mode="schedule">予定あり（買い物など）</button>
+      </div>
+
+      <div id="scheduleFields" class="inline-panel d-none">
+        <label for="scheduleDetail" class="field-label">何の予定？</label>
+        <input
+          id="scheduleDetail"
+          type="text"
+          maxlength="60"
+          class="form-control"
+          placeholder="例：買い物、病院、美容院"
+          autocomplete="off"
+        />
+        <p class="field-label">何時ごろ着く？</p>
+        <p class="section-hint" style="margin:0 0 0.5rem">予定のあとの到着時間です</p>
+        <div class="chip-grid" id="scheduleTimeGroup" role="group" aria-label="予定後の到着時間"></div>
+        <input type="hidden" id="scheduleTime" value="" />
       </div>
     </section>
 
     <section class="section" id="arrivalSection" aria-labelledby="arrLabel">
-      <p class="section-label" id="arrLabel"><span class="step-num">2</span>家に着く時間</p>
+      <p class="section-label" id="arrLabel"><span class="step-num" id="arrStep">2</span>家に着く時間</p>
       <p class="section-hint">メッセージの2行目になります</p>
       <div class="chip-grid" id="patternGroup" role="group" aria-label="到着時間"></div>
     </section>
 
     <section class="section" aria-labelledby="dinLabel">
-      <p class="section-label" id="dinLabel"><span class="step-num">3</span>夕飯どうする？</p>
-      <p class="section-hint">メッセージの3行目になります</p>
+      <p class="section-label" id="dinLabel"><span class="step-num" id="dinStep">3</span>夕飯どうする？</p>
+      <p class="section-hint">メッセージの最後の行になります</p>
       <div class="segment-wrap" role="group" aria-label="夕飯">
         <input type="radio" name="dinner" id="d-home" value="home" checked />
         <label for="d-home">家で食べる</label>
@@ -53,46 +85,6 @@ export const PAGE_HTML = `<!DOCTYPE html>
         <label for="d-eat">食べて帰る</label>
         <input type="radio" name="dinner" id="d-none" value="none" />
         <label for="d-none">いらない</label>
-      </div>
-    </section>
-
-    <section class="section" aria-labelledby="schLabel">
-      <p class="section-label" id="schLabel">用事・予定がある？</p>
-      <p class="section-hint">買い物・病院など。選ぶと題名が「予定：」になります</p>
-      <div class="segment-wrap" role="group" aria-label="予定の有無">
-        <input type="radio" name="scheduleMode" id="s-none" value="none" checked />
-        <label for="s-none">なし</label>
-        <input type="radio" name="scheduleMode" id="s-has" value="has" />
-        <label for="s-has">あり</label>
-      </div>
-
-      <div id="scheduleFields" class="schedule-panel d-none">
-        <label for="scheduleDetail" class="field-label">何の予定？</label>
-        <input
-          id="scheduleDetail"
-          type="text"
-          maxlength="60"
-          class="form-control mb-2"
-          placeholder="例：買い物、病院、美容院"
-          autocomplete="off"
-        />
-        <label for="scheduleTime" class="field-label">そのあと、何時ごろ着く？</label>
-        <select id="scheduleTime" class="form-select">
-          <option value="">選んでください</option>
-          <option value="19:00">19:00</option>
-          <option value="19:30">19:30</option>
-          <option value="20:00">20:00</option>
-          <option value="20:30">20:30</option>
-          <option value="21:00">21:00</option>
-          <option value="21:30">21:30</option>
-          <option value="22:00">22:00</option>
-          <option value="22:30">22:30</option>
-          <option value="23:00">23:00</option>
-          <option value="23:30">23:30</option>
-          <option value="翌日 00:00">翌日 00:00</option>
-          <option value="翌日 00:30">翌日 00:30</option>
-          <option value="翌日 01:00">翌日 01:00</option>
-        </select>
       </div>
     </section>
 
@@ -118,20 +110,24 @@ export const PAGE_HTML = `<!DOCTYPE html>
   <script>
     ${CLIENT_SCRIPT}
 
-    var STORAGE_KEY = 'okaeri_prefs_v3';
+    var STORAGE_KEY = 'okaeri_prefs_v4';
+    var SCHEDULE_TIMES = ${JSON.stringify(SCHEDULE_TIMES)};
     var DINNER_TEXT = { home: '家で食べます', eatOut: '食べて帰ります', none: 'いりません' };
     var patterns = [];
     var selectedIndex = 0;
-    var selectedSituation = 'none';
+    var selectedMode = 'none';
+    var selectedScheduleTime = '';
     var patternGroup = document.getElementById('patternGroup');
-    var situationSection = document.getElementById('situationSection');
+    var scheduleTimeGroup = document.getElementById('scheduleTimeGroup');
     var arrivalSection = document.getElementById('arrivalSection');
+    var arrStep = document.getElementById('arrStep');
+    var dinStep = document.getElementById('dinStep');
     var btnSend = document.getElementById('btnSend');
     var preview = document.getElementById('preview');
     var scheduleFields = document.getElementById('scheduleFields');
     var scheduleTime = document.getElementById('scheduleTime');
     var scheduleDetail = document.getElementById('scheduleDetail');
-    var situationChips = document.querySelectorAll('[data-situation]');
+    var modeChips = document.querySelectorAll('[data-mode]');
     var toastEl = document.getElementById('toast');
     var toastBody = document.getElementById('toastBody');
     var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 2200 }) : null;
@@ -144,6 +140,14 @@ export const PAGE_HTML = `<!DOCTYPE html>
       toast.show();
     }
 
+    function hasSchedule() {
+      return selectedMode === 'schedule';
+    }
+
+    function situationKeyForApi() {
+      return hasSchedule() ? 'none' : selectedMode;
+    }
+
     function defaultPatternIndex() {
       var h = new Date().getHours();
       if (h < 17) return 0;
@@ -151,6 +155,15 @@ export const PAGE_HTML = `<!DOCTYPE html>
       if (h < 19) return 2;
       if (h < 20) return 3;
       return Math.min(4, Math.max(0, patterns.length - 1));
+    }
+
+    function defaultScheduleTime() {
+      var h = new Date().getHours();
+      if (h < 19) return '20:00';
+      if (h < 20) return '21:00';
+      if (h < 21) return '22:00';
+      if (h < 22) return '23:00';
+      return '翌日 00:00';
     }
 
     function renderPatterns() {
@@ -166,6 +179,19 @@ export const PAGE_HTML = `<!DOCTYPE html>
       });
     }
 
+    function renderScheduleTimes() {
+      scheduleTimeGroup.innerHTML = '';
+      SCHEDULE_TIMES.forEach(function (t) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chip';
+        btn.setAttribute('data-time', t);
+        btn.textContent = t;
+        btn.addEventListener('click', function () { setScheduleTime(t); });
+        scheduleTimeGroup.appendChild(btn);
+      });
+    }
+
     function setPattern(index) {
       selectedIndex = index;
       patternGroup.querySelectorAll('.chip').forEach(function (btn, i) {
@@ -176,10 +202,11 @@ export const PAGE_HTML = `<!DOCTYPE html>
       updatePreview();
     }
 
-    function setSituation(key) {
-      selectedSituation = key || 'none';
-      situationChips.forEach(function (btn) {
-        var on = btn.getAttribute('data-situation') === selectedSituation;
+    function setScheduleTime(t) {
+      selectedScheduleTime = t || '';
+      scheduleTime.value = selectedScheduleTime;
+      scheduleTimeGroup.querySelectorAll('.chip').forEach(function (btn) {
+        var on = btn.getAttribute('data-time') === selectedScheduleTime;
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
@@ -187,27 +214,34 @@ export const PAGE_HTML = `<!DOCTYPE html>
       updatePreview();
     }
 
+    function setMode(mode) {
+      selectedMode = mode || 'none';
+      modeChips.forEach(function (btn) {
+        var on = btn.getAttribute('data-mode') === selectedMode;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      syncLayout();
+      if (hasSchedule() && !selectedScheduleTime) {
+        setScheduleTime(defaultScheduleTime());
+        if (scheduleDetail) setTimeout(function () { scheduleDetail.focus(); }, 50);
+      } else {
+        savePrefs();
+        updatePreview();
+      }
+    }
+
+    function syncLayout() {
+      var show = hasSchedule();
+      scheduleFields.classList.toggle('d-none', !show);
+      arrivalSection.classList.toggle('d-none', show);
+      arrStep.textContent = '2';
+      dinStep.textContent = show ? '2' : '3';
+    }
+
     function getDinnerKey() {
       var r = document.querySelector('input[name="dinner"]:checked');
       return r ? r.value : 'home';
-    }
-
-    function hasSchedule() {
-      var r = document.querySelector('input[name="scheduleMode"]:checked');
-      return !!r && r.value === 'has';
-    }
-
-    function updateScheduleFields() {
-      var show = hasSchedule();
-      scheduleFields.classList.toggle('d-none', !show);
-      situationSection.classList.toggle('d-none', show);
-      arrivalSection.classList.toggle('d-none', show);
-      if (show) {
-        selectedSituation = 'none';
-        setSituation('none');
-      }
-      savePrefs();
-      updatePreview();
     }
 
     function updatePreview() {
@@ -217,9 +251,9 @@ export const PAGE_HTML = `<!DOCTYPE html>
         messageMode: mode,
         arrival: p.arrival,
         dinnerLine: DINNER_TEXT[getDinnerKey()],
-        scheduleTime: scheduleTime.value || '（未選択）',
+        scheduleTime: selectedScheduleTime || '（未選択）',
         scheduleDetail: (scheduleDetail.value || '').trim() || '（内容未入力）',
-        situationKey: selectedSituation
+        situationKey: situationKeyForApi()
       });
       preview.textContent = text;
       preview.classList.toggle('empty', !text);
@@ -231,9 +265,8 @@ export const PAGE_HTML = `<!DOCTYPE html>
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           patternIndex: selectedIndex,
           dinnerKey: getDinnerKey(),
-          situationKey: selectedSituation,
-          scheduleMode: hasSchedule() ? 'has' : 'none',
-          scheduleTime: scheduleTime.value,
+          mode: selectedMode,
+          scheduleTime: selectedScheduleTime,
           scheduleDetail: scheduleDetail.value
         }));
       } catch (e) {}
@@ -242,17 +275,24 @@ export const PAGE_HTML = `<!DOCTYPE html>
     function loadPrefs() {
       try {
         var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          // migrate v3
+          raw = localStorage.getItem('okaeri_prefs_v3');
+        }
         if (!raw) return;
         var p = JSON.parse(raw);
         if (p.dinnerKey) {
           var d = document.querySelector('input[name="dinner"][value="' + p.dinnerKey + '"]');
           if (d) d.checked = true;
         }
-        if (p.situationKey) selectedSituation = p.situationKey;
-        if (p.scheduleMode === 'has') {
-          document.getElementById('s-has').checked = true;
+        if (p.mode) {
+          selectedMode = p.mode;
+        } else if (p.scheduleMode === 'has') {
+          selectedMode = 'schedule';
+        } else if (p.situationKey) {
+          selectedMode = p.situationKey;
         }
-        if (p.scheduleTime) scheduleTime.value = p.scheduleTime;
+        if (p.scheduleTime) selectedScheduleTime = p.scheduleTime;
         if (p.scheduleDetail) scheduleDetail.value = p.scheduleDetail;
         if (typeof p.patternIndex === 'number' && p.patternIndex < patterns.length) {
           selectedIndex = p.patternIndex;
@@ -260,19 +300,15 @@ export const PAGE_HTML = `<!DOCTYPE html>
       } catch (e) {}
     }
 
-    situationChips.forEach(function (btn) {
+    modeChips.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        setSituation(btn.getAttribute('data-situation'));
+        setMode(btn.getAttribute('data-mode'));
       });
     });
 
     document.querySelectorAll('input[name="dinner"]').forEach(function (el) {
       el.addEventListener('change', function () { savePrefs(); updatePreview(); });
     });
-    document.querySelectorAll('input[name="scheduleMode"]').forEach(function (el) {
-      el.addEventListener('change', updateScheduleFields);
-    });
-    scheduleTime.addEventListener('change', function () { savePrefs(); updatePreview(); });
     scheduleDetail.addEventListener('input', function () { savePrefs(); updatePreview(); });
 
     var fallbackPatterns = [
@@ -286,11 +322,20 @@ export const PAGE_HTML = `<!DOCTYPE html>
     function boot(list) {
       patterns = list && list.length ? list : fallbackPatterns;
       renderPatterns();
+      renderScheduleTimes();
       loadPrefs();
-      setSituation(selectedSituation);
-      if (!localStorage.getItem(STORAGE_KEY)) setPattern(defaultPatternIndex());
-      else setPattern(selectedIndex);
-      updateScheduleFields();
+      modeChips.forEach(function (btn) {
+        var on = btn.getAttribute('data-mode') === selectedMode;
+        btn.classList.toggle('active', on);
+      });
+      syncLayout();
+      if (!localStorage.getItem(STORAGE_KEY) && !localStorage.getItem('okaeri_prefs_v3')) {
+        setPattern(defaultPatternIndex());
+      } else {
+        setPattern(selectedIndex);
+      }
+      if (selectedScheduleTime) setScheduleTime(selectedScheduleTime);
+      updatePreview();
     }
 
     fetch('/api/patterns')
@@ -306,9 +351,8 @@ export const PAGE_HTML = `<!DOCTYPE html>
           scheduleDetail.focus();
           return;
         }
-        if (!scheduleTime.value) {
+        if (!selectedScheduleTime) {
           showToast('到着時間を選んでください', false);
-          scheduleTime.focus();
           return;
         }
       }
@@ -323,9 +367,9 @@ export const PAGE_HTML = `<!DOCTYPE html>
           patternIndex: selectedIndex,
           dinnerKey: getDinnerKey(),
           hasSchedule: hasSchedule(),
-          scheduleTime: scheduleTime.value,
+          scheduleTime: selectedScheduleTime,
           scheduleDetail: scheduleDetail.value.trim(),
-          situationKey: selectedSituation
+          situationKey: situationKeyForApi()
         })
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
